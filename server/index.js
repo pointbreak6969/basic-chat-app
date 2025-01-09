@@ -21,6 +21,7 @@ app.use(express.json());
 
 //routes 
 import authRouter from "./routes/authRoutes.js";
+import contactRouter from "./routes/contactRoutes.js";
 app.use("/api/auth", authRouter); 
 
 const server = app.listen(port, () => {

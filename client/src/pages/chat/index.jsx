@@ -3,9 +3,11 @@ import { useNavigate } from "react-router-dom"
 import ContactsContainer from "./components/contacts-container"
 import EmptyChatContainer from "./components/empty-chat-container"
 import ChatContainer from "./components/chat-container"
+import { useAppStore } from "@/store"
 
 const Chat = () => {
-  const {userInfo} = useProfile()
+  const {userInfo, selectedChatType } = useAppStore()
+
   const navigate = useNavigate()
   useEffect(()=>{
     if (!userInfo) {
@@ -17,8 +19,11 @@ const Chat = () => {
   return (
     <div className="flex h-[100vh] text-white overflow-hidden">
     <ContactsContainer/>
-    <EmptyChatContainer/>
-    <ChatContainer/>
+    {
+      selectedChatType === undefined ? ( <EmptyChatContainer/>) : (<ChatContainer/>)
+    }
+   
+    
     </div>
   )
 }
