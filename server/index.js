@@ -1,5 +1,5 @@
 import express from "express";
-// import setupSocket from "./socket";
+import setupSocket from "./socket";
 import mongoose from "mongoose";
 import cors from "cors";
 import cookieParser from "cookie-parser";
@@ -27,6 +27,7 @@ app.use("/api/auth", authRouter);
 const server = app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 });
+setupSocket(server);
 mongoose
   .connect(databaseURL)
   .then(() => console.log("DB Connection Successful"))
