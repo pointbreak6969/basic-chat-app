@@ -1,11 +1,10 @@
 // app/components/MessageInput.tsx
-"use client";
+
 
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Paperclip, ImageIcon, Smile, Send } from "lucide-react";
-
 
 export default function MessageInput() {
   const [message, setMessage] = useState('');

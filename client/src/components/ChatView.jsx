@@ -1,5 +1,5 @@
 // app/components/ChatView.tsx
-"use client";
+
 
 import { useState, useRef, useEffect } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";

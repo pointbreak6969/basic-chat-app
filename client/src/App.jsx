@@ -1,35 +1,63 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
-
+import React, { useState, useEffect } from "react";
+import { useDispatch } from "react-redux";
+import "./App.css";
+import authService from "./services/auth";
+import { login, logout } from "./store/authSlice";
+import { Outlet } from "react-router-dom";
+import Navbar from "./components/Navbar";
+import Footer from "./components/Footer";
+import { fetchProfileDetails } from "./store/profileReducer";
+import { Toaster } from "sonner";
 function App() {
-  const [count, setCount] = useState(0)
+  const [loading, setLoading] = useState(true);
+  const dispatch = useDispatch();
+  const adminpage=location.pathname==='/admin' || location.pathname==='/admin/classroom' || location.pathname=== '/admin/classroomrequest' || location.pathname=== '/admin/userinfo'
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        setLoading(true);
+        const session = await authService.getCurrentUser();
+        if (session?.data?.data) {
+          dispatch(login(session.data.data));
+          dispatch(fetchProfileDetails());
+        } else {
+          dispatch(logout());
+        }
+      } catch (error) {
+        console.error("Authentication error:", error);
+        dispatch(logout());
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkAuth();
+    return () => {
+      setLoading(false);
+    };
+  }, [dispatch]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="loader"></p>
+      </div>
+    );
+  }
 
   return (
     <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
+      <Toaster
+        position="top-center"
+        richColors
+        closeButton
+        theme="light"
+      />
+     {!adminpage && <Navbar />}
+      <Outlet />
+      {!adminpage && <Footer />}
     </>
-  )
+  );
 }
 
-export default App
+export default App;
