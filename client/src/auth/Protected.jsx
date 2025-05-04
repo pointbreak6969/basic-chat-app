@@ -10,13 +10,13 @@ export default function Protected({ children, authentication = false,redirectPat
   useEffect(() => {
     // For protected routes (authentication = true)
     if (authentication && !authStatus) {
-      navigate('/login', { replace: true });
+      navigate('/login');
       return;
     }
 
     // For public only routes (authentication = false)
     if (!authentication && authStatus) {
-      navigate(redirectPath, { replace: true });
+      navigate(redirectPath);
       return;
     }
 

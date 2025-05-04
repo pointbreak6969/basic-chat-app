@@ -22,8 +22,8 @@ export const signUpSchema = z.object({
   fullName: z
     .string()
     .min(4, "Username must be at least 4 characters")
-    .max(10, "Username cannot exceed 10 characters")
-    .regex(/^[a-zA-Z0-9_-]+$/, "Username can only contain letters, numbers, underscores and hyphens"),
+    .max(50, "Username cannot exceed 10 characters")
+,
   
   email: z
     .string()
@@ -52,7 +52,7 @@ export const signUpSchema = z.object({
       "Password is too common"
     ),
 }).refine(
-  (data) => !data.password.toLowerCase().includes(data.username.toLowerCase()),
+  (data) => !data.password.toLowerCase().includes(data.fullName.toLowerCase()),
   {
     message: "Password cannot contain your username",
     path: ["password"],

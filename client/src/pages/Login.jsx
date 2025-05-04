@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "../components/ui/button";
 import {
   Card,
   CardContent,
@@ -7,23 +7,22 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { MessageCircle, Mail, Lock, User, Github } from "lucide-react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"; 
-import { login } from "@/store/authSlice";
+} from "../components/ui/card";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
+import { Checkbox } from "../components/ui/checkbox";
+// Import Eye and EyeOff icons
+import { MessageCircle, Mail, Lock, User, Github, Eye, EyeOff } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "../components/ui/alert"; 
+import { login } from "../store/authSlice";
 import { useDispatch } from "react-redux";
 import { useForm } from "react-hook-form";
-import { useNavigate } from "react-router-dom";
-
-import { signInSchema } from "@/schemas/signInSchema";
+import { Link, useNavigate } from "react-router-dom";
+import { signInSchema } from "../schemas/signInSchema";
 import { zodResolver } from "@hookform/resolvers/zod";
+import authService from "../services/authService";
 
-import authService from "@/services/authService";
-
-export default function LoginSignupPage() {
+export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loginError, setLoginError] = useState(null); // State for login error
@@ -46,13 +45,12 @@ export default function LoginSignupPage() {
     setLoginError(null); // Clear previous errors
     try {
       const response = await authService.login(data);
-      if (response.status === 200) {
+      if (response.statusCode === 200) {
         dispatch(login(response.data));
-        navigate("/", { replace: true });
+        navigate("/");
       }
     } catch (error) {
       console.error("Login failed:", error);
-      // Set a user-friendly error message
       const errorMessage =
         error.response?.data?.message ||
         "Login failed. Please check your credentials and try again.";
@@ -123,10 +121,22 @@ export default function LoginSignupPage() {
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"} // Toggle password visibility
-                    className={`pl-10 ${errors.password ? "border-red-500" : ""}`} // Add error styling
+                    className={`pl-10 pr-10 ${errors.password ? "border-red-500" : ""}`} // Add padding-right for the icon
                     {...register("password")} // Register password field
                   />
-                  {/* Consider adding a button to toggle showPassword state */}
+                  {/* Add button to toggle password visibility */}
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
                 </div>
                 {errors.password && ( // Display password validation error
                   <p className="text-xs text-red-600 mt-1">
@@ -191,10 +201,11 @@ export default function LoginSignupPage() {
               </div>
 
               <div className="text-center mt-4 text-sm">
-                Don't have an account?{" "}
+                <Link to={"/signup"}>Don't have an account?{" "}
                 <span className="text-purple-600 hover:underline cursor-pointer">
                   Sign up
-                </span>
+                </span></Link>
+                
               </div>
             </CardFooter>
           </Card>
