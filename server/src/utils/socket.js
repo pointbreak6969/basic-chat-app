@@ -1,11 +1,14 @@
 import { Server } from "socket.io";
 import http from "http";
 import { app } from "../app.js";
+import User from "../models/Users.js";
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
     origin: process.env.CORS_ORIGIN,
+    credentials: true,
   },
+ 
   pingTimeout: 60000, // 60 seconds
   transports: ["websocket", "polling"],
   allowEIO3: true, // for compatibility with older clients
@@ -21,7 +24,7 @@ export function getOnlineUsers() {
   return Object.fromEntries(userSocketMap); // get all the online users from the map
 }
 
-io.on("connection", (socket) => {
+io.on("connect", (socket) => {
   console.log("New socket connection", socket.id);
   const userId = socket.handshake.query.userId; // get userId from query params
   if (userId) {

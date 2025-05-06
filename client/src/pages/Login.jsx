@@ -22,6 +22,7 @@ import { signInSchema } from "../schemas/signInSchema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import authService from "../services/authService";
 
+
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -46,7 +47,9 @@ export default function Login() {
     try {
       const response = await authService.login(data);
       if (response.statusCode === 200) {
-        dispatch(login(response.data));
+  
+        dispatch(login(response.data.loggedInUser));
+        // connectSocket(); 
         navigate("/");
       }
     } catch (error) {

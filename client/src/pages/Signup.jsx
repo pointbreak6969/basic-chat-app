@@ -22,6 +22,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { login } from "../store/authSlice";
 import { useForm } from "react-hook-form";
 
+
 const Signup = () => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
@@ -48,7 +49,8 @@ const Signup = () => {
       if (response.statusCode === 200) {
         console.log(response);
         dispatch(login(response.data));
-       
+        socket.connect(); // Connect the socket after successful registration
+        navigate("/"); // Redirect to home page after successful registration
       }
     } catch (error) {
       console.error("Registration failed:", error); 
