@@ -13,7 +13,6 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Checkbox } from "../components/ui/checkbox";
 import { MessageCircle, Mail, Lock, User, Github, Eye, EyeOff } from "lucide-react"; // Import Eye and EyeOff
-import { Alert, AlertDescription, AlertTitle } from "../components/ui/alert";
 import authService from "../services/authService";
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
@@ -21,6 +20,7 @@ import { signUpSchema } from "../schemas/signUpSchema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { login } from "../store/authSlice";
 import { useForm } from "react-hook-form";
+import { initSocket } from "@/services/socketService";
 
 
 const Signup = () => {
@@ -49,7 +49,7 @@ const Signup = () => {
       if (response.statusCode === 200) {
         console.log(response);
         dispatch(login(response.data));
-        socket.connect(); // Connect the socket after successful registration
+      initSocket(response.data._id); // Initialize socket with user ID
         navigate("/"); // Redirect to home page after successful registration
       }
     } catch (error) {

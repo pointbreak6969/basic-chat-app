@@ -21,7 +21,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { signInSchema } from "../schemas/signInSchema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import authService from "../services/authService";
-
+import { initSocket } from "@/services/socketService";
 
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
@@ -49,7 +49,7 @@ export default function Login() {
       if (response.statusCode === 200) {
   
         dispatch(login(response.data.loggedInUser));
-        // connectSocket(); 
+        initSocket(response.data.loggedInUser._id); 
         navigate("/");
       }
     } catch (error) {

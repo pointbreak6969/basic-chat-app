@@ -20,7 +20,10 @@ app.use(
 //import routes
 import UserRoutes from "./routes/user.routes.js"
 import FriendRoutes from "./routes/friends.routes.js";
-
+import ConversationRoutes from "./routes/conversation.routes.js";
+import MessageRoutes from "./routes/message.routes.js";
 app.use("/api/v1/user", UserRoutes);
 app.use("/api/v1/friends", FriendRoutes);
+app.use("/api/v1/conversation", ConversationRoutes);
+app.use("/api/v1/message", MessageRoutes);
 export { app };

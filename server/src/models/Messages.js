@@ -30,7 +30,13 @@ const MessagesSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
     }
-   ]
+   ], 
+   replyTo: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Messages",
+   },
+}, {
+    timestamps: true,
 })
 
 const Messages = mongoose.model("Messages", MessagesSchema);    
