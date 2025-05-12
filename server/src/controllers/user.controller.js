@@ -161,18 +161,6 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
   }
 });
 
-// const searchUsers = asyncHandler(async (req, res)=>{
-//   const {query} = req.query
-//   if(!query) return next(new ApiError(400, "Query is required"))
-//   const users = await User.find({
-//     $or: [
-//       {fullName: {$regex: query, $options: "i"}},
-//       {email: {$regex: query, $options: "i"}}
-//     ]
-//   }).select("-password -refreshToken -otp -otpExpiry")
-//   if(!users) return next(new ApiError(404, "No users found"))
-//   return res.json(new ApiResponse(200, users, "Users found successfully"))
-// })
 
 const exploreUsers = asyncHandler(async (req, res) => {
   try {
@@ -192,20 +180,17 @@ const exploreUsers = asyncHandler(async (req, res) => {
       // Find all friends of the current user
       const friendships = await Friends.find({
         $or: [
-          { requester: req.user._id },
-          { recipient: req.user._id }
+          { userA: req.user._id },
+          { userB: req.user._id }
         ],
-        status: "accepted"
-      });
-      
-      // Extract friend IDs from the friendships
+      }); 
+      // // Extract friend IDs from the friendships
       const friendIds = friendships.map(friendship => 
-        friendship.requester.toString() === req.user._id.toString() 
-          ? friendship.recipient 
-          : friendship.requester
+        friendship.userA.toString() === req.user._id.toString() 
+          ? friendship.userB 
+          : friendship.userA
       );
-      
-      // Exclude current user and friends from results
+      // // Exclude current user and friends from results
       searchFilter._id = { 
         $ne: req.user._id,
         $nin: friendIds

@@ -11,7 +11,7 @@ const FriendPage = () => {
   // SWR hooks for data fetching
   const { data: friends = [], mutate: mutateFriends } = useSWR(
     "friends",
-    () => friendService.getFriends().then(res => res.data)
+    () => friendService.getFriends(searchQuery).then(res => res.data.friends)
   );
   
   const { data: pendingRequests = [], mutate: mutatePendingRequests } = useSWR(
@@ -24,10 +24,10 @@ const FriendPage = () => {
     () => friendService.getSentRequests().then(res => res.data)
   );
   
-  const { data: searchResults = [] } = useSWR(
-    searchQuery ? ["searchFriends", searchQuery] : null,
-    () => friendService.searchFriends(searchQuery).then(res => res.data)
-  );
+//   const { data: searchResults = [] } = useSWR(
+//     searchQuery ? ["searchFriends", searchQuery] : null,
+//     () => friendService.searchFriends(searchQuery).then(res => res.data)
+//   );
 
   const { data: recommendations = [] } = useSWR(
     activeTab === "recommendations" ? "recommendations" : null,

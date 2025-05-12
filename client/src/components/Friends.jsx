@@ -1,5 +1,5 @@
 import { Label } from "./ui/label";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Link } from "react-router-dom";
 import {
   ArrowLeft,
@@ -41,7 +41,6 @@ import InfiniteScroll from "react-infinite-scroll-component";
 export default function Friends({
   friends,
   pendingRequests,
-  sentRequests,
   searchResults,
   searchQuery,
   setSearchQuery,
@@ -49,21 +48,31 @@ export default function Friends({
   onTabChange,
   loadMoreRecommendations,
   recommendationsHasMore,
-  recommendationPage,
 }) {
   const [showAddFriendDialog, setShowAddFriendDialog] = useState(false);
   const [friendUsername, setFriendUsername] = useState("");
   const [addFriendStatus, setAddFriendStatus] = useState(null);
   const [addFriendMessage, setAddFriendMessage] = useState("");
-
+  const [recommendations, setRecommendations] = useState([]);
+  useEffect(() => {
+    const initialRecommendations = Array.isArray(searchResults)
+      ? searchResults
+      : searchResults?.users || [];
+       setRecommendations(initialRecommendations);
+  },  [searchResults]);
   const filteredFriends = useMemo(() => {
     if (!Array.isArray(friends)) return [];
     if (!searchQuery) return friends;
-    return friends.filter((friend) =>
+    const myFriends = friends.filter((friend) =>
       friend?.name?.toLowerCase().includes(searchQuery.toLowerCase())
     );
+    console.log("Filtered Friends:", myFriends);
+    return myFriends;
   }, [friends, searchQuery]);
-
+  // Get the actual recommendations array from the response object
+  // let recommendationsArray = Array.isArray(searchResults)
+  //   ? searchResults
+  //   : searchResults?.users || [];
   const handleFriendRequest = async (requestId, accept) => {
     try {
       if (accept) {
@@ -81,12 +90,13 @@ export default function Friends({
   const handleRecommendation = async (userId, add) => {
     try {
       if (add) {
-        await friendService.sendFriendRequest(userId);
+        await friendService.addFriend(userId);
         setAddFriendStatus("success");
         setAddFriendMessage("Friend request sent successfully!");
       } else {
-        // Just dismiss the recommendation visually
-        console.log("Dismissed recommendation:", userId);
+        setRecommendations(prevRecommendations => 
+        prevRecommendations.filter(user => user._id !== userId)
+      );
       }
       // Refresh recommendations via SWR
       onTabChange("recommendations");
@@ -105,7 +115,6 @@ export default function Friends({
 
   const handleAddFriend = async () => {
     if (!friendUsername.trim()) return;
-
     try {
       await friendService.sendFriendRequest(friendUsername);
       setAddFriendStatus("success");
@@ -120,11 +129,6 @@ export default function Friends({
       setAddFriendMessage("Failed to send friend request. Please try again.");
     }
   };
-
-  // Get the actual recommendations array from the response object
-  const recommendationsArray = Array.isArray(searchResults) 
-    ? searchResults 
-    : (searchResults?.users || []);
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-950">
@@ -158,11 +162,7 @@ export default function Friends({
           </Button>
         </div>
 
-        <Tabs 
-          value={activeTab} 
-          onValueChange={onTabChange} 
-          className="w-full"
-        >
+        <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
           <TabsList className="grid grid-cols-3 mb-8">
             <TabsTrigger value="requests" className="flex items-center gap-2">
               <Bell className="h-4 w-4" />
@@ -278,7 +278,7 @@ export default function Friends({
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {recommendationsArray.length === 0 ? (
+                {recommendations.length === 0 ? (
                   <div className="text-center py-8">
                     <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900 mb-4">
                       <UserRoundPlus className="h-6 w-6 text-purple-600 dark:text-purple-300" />
@@ -298,12 +298,17 @@ export default function Friends({
                     </Button>
                   </div>
                 ) : (
-                  <div id="recommendationsScrollContainer" className="overflow-auto max-h-[70vh]">
+                  <div
+                    id="recommendationsScrollContainer"
+                    className="overflow-auto max-h-[70vh]"
+                  >
                     <InfiniteScroll
-                      dataLength={recommendationsArray.length}
+                      dataLength={recommendations.length}
                       next={loadMoreRecommendations}
                       hasMore={recommendationsHasMore}
-                      loader={<div className="text-center py-4">Loading more...</div>}
+                      loader={
+                        <div className="text-center py-4">Loading more...</div>
+                      }
                       endMessage={
                         <p className="text-center mt-4 text-sm text-gray-500">
                           All recommendations loaded!
@@ -312,7 +317,7 @@ export default function Friends({
                       scrollableTarget="recommendationsScrollContainer"
                     >
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {recommendationsArray.map((user) => (
+                        {recommendations.map((user) => (
                           <div
                             key={user._id}
                             className="flex items-center justify-between p-4 rounded-lg border border-gray-200 dark:border-gray-800"
@@ -335,7 +340,9 @@ export default function Friends({
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => handleRecommendation(user._id, false)}
+                                onClick={() =>
+                                  handleRecommendation(user._id, false)
+                                }
                               >
                                 <X className="h-4 w-4 mr-1" />
                                 Dismiss
@@ -343,7 +350,9 @@ export default function Friends({
                               <Button
                                 size="sm"
                                 className="bg-purple-600 hover:bg-purple-700"
-                                onClick={() => handleRecommendation(user._id, true)}
+                                onClick={() =>
+                                  handleRecommendation(user._id, true)
+                                }
                               >
                                 <UserPlus className="h-4 w-4 mr-1" />
                                 Add
@@ -419,14 +428,14 @@ export default function Friends({
                   <div className="space-y-4">
                     {filteredFriends.map((friend) => (
                       <div
-                        key={friend.id}
+                        key={friend._id}
                         className="flex items-center justify-between p-4 rounded-lg border border-gray-200 dark:border-gray-800"
                       >
                         <div className="flex items-center gap-3">
                           <div className="relative">
                             <UserAvatar
-                              profilePicture={friend.avatar}
-                              fullName={friend.name}
+                              profilePicture={friend.profilePicture}
+                              fullName={friend.fullName}
                             />
                             <span
                               className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white dark:border-gray-900 ${
@@ -440,7 +449,7 @@ export default function Friends({
                           </div>
                           <div>
                             <h4 className="font-medium text-gray-900 dark:text-white">
-                              {friend.name}
+                              {friend.fullName}
                             </h4>
                             <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">
                               {friend.status}
@@ -556,7 +565,9 @@ export default function Friends({
                           <Button
                             size="sm"
                             className="bg-purple-600 hover:bg-purple-700"
-                            onClick={() => handleRecommendation(result.id, true)}
+                            onClick={() =>
+                              handleRecommendation(result.id, true)
+                            }
                           >
                             <UserPlus className="h-4 w-4 mr-1" />
                             Add
