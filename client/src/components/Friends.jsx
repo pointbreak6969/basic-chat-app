@@ -12,7 +12,6 @@ import {
   Users,
   Bell,
   UserRoundPlus,
-  User,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -37,6 +36,7 @@ import {
 } from "./ui/dialog";
 import { Alert, AlertDescription } from "./ui/alert";
 import friendService from "@/services/FriendService";
+import InfiniteScroll from "react-infinite-scroll-component";
 
 export default function Friends({
   friends,
@@ -45,15 +45,16 @@ export default function Friends({
   searchResults,
   searchQuery,
   setSearchQuery,
-  showSentRequests,
-  setShowSentRequests,
+  activeTab,
+  onTabChange,
+  loadMoreRecommendations,
+  recommendationsHasMore,
+  recommendationPage,
 }) {
-  const [activeTab, setActiveTab] = useState("requests");
   const [showAddFriendDialog, setShowAddFriendDialog] = useState(false);
   const [friendUsername, setFriendUsername] = useState("");
   const [addFriendStatus, setAddFriendStatus] = useState(null);
   const [addFriendMessage, setAddFriendMessage] = useState("");
-  const [isSearching, setIsSearching] = useState(false);
 
   const filteredFriends = useMemo(() => {
     if (!Array.isArray(friends)) return [];
@@ -70,9 +71,8 @@ export default function Friends({
       } else {
         await friendService.rejectFriendRequest(requestId);
       }
-      // Refresh the pending requests list
-      const response = await friendService.getPendingRequests();
-      setPendingRequests(response.data);
+      // Update data via SWR by fetching the "requests" tab data
+      onTabChange("requests");
     } catch (error) {
       console.error("Error handling friend request:", error);
     }
@@ -85,10 +85,11 @@ export default function Friends({
         setAddFriendStatus("success");
         setAddFriendMessage("Friend request sent successfully!");
       } else {
-        // Handle dismissing recommendation
-        // This would typically be handled by the backend
+        // Just dismiss the recommendation visually
         console.log("Dismissed recommendation:", userId);
       }
+      // Refresh recommendations via SWR
+      onTabChange("recommendations");
     } catch (error) {
       console.error("Error handling recommendation:", error);
       setAddFriendStatus("error");
@@ -96,17 +97,10 @@ export default function Friends({
     }
   };
 
-  const handleSearch = async (e) => {
+  // Form handler for search
+  const handleSearch = (e) => {
     e.preventDefault();
-    setIsSearching(true);
-    try {
-      const response = await friendService.searchFriends(searchQuery);
-      setSearchResults(response.data);
-    } catch (error) {
-      console.error("Error searching friends:", error);
-    } finally {
-      setIsSearching(false);
-    }
+    // The SWR hook in parent will handle the data fetching based on searchQuery
   };
 
   const handleAddFriend = async () => {
@@ -118,6 +112,8 @@ export default function Friends({
       setAddFriendMessage(`Friend request sent to ${friendUsername}!`);
       setFriendUsername("");
       setTimeout(() => setAddFriendStatus(null), 3000);
+      // Refresh sent requests tab
+      onTabChange("sentRequests");
     } catch (error) {
       console.error("Error adding friend:", error);
       setAddFriendStatus("error");
@@ -125,12 +121,17 @@ export default function Friends({
     }
   };
 
+  // Get the actual recommendations array from the response object
+  const recommendationsArray = Array.isArray(searchResults) 
+    ? searchResults 
+    : (searchResults?.users || []);
+
   return (
     <div className="min-h-screen bg-white dark:bg-gray-950">
       <div className="max-w-4xl mx-auto p-4 sm:p-6 md:p-8">
         <div className="flex items-center mb-4">
           <Link
-            href="/settings"
+            to="/settings"
             className="inline-flex items-center text-sm font-medium text-purple-600 hover:text-purple-700 transition-colors"
           >
             <ArrowLeft className="h-4 w-4 mr-1" />
@@ -157,7 +158,11 @@ export default function Friends({
           </Button>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <Tabs 
+          value={activeTab} 
+          onValueChange={onTabChange} 
+          className="w-full"
+        >
           <TabsList className="grid grid-cols-3 mb-8">
             <TabsTrigger value="requests" className="flex items-center gap-2">
               <Bell className="h-4 w-4" />
@@ -205,7 +210,7 @@ export default function Friends({
                     </p>
                     <Button
                       variant="link"
-                      onClick={() => setActiveTab("recommendations")}
+                      onClick={() => onTabChange("recommendations")}
                       className="mt-4 text-purple-600 hover:text-purple-700"
                     >
                       View Recommendations
@@ -273,7 +278,7 @@ export default function Friends({
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {searchResults.length === 0 ? (
+                {recommendationsArray.length === 0 ? (
                   <div className="text-center py-8">
                     <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900 mb-4">
                       <UserRoundPlus className="h-6 w-6 text-purple-600 dark:text-purple-300" />
@@ -293,50 +298,61 @@ export default function Friends({
                     </Button>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {searchResults.map((result) => (
-                      <div
-                        key={result.id}
-                        className="flex items-center justify-between p-4 rounded-lg border border-gray-200 dark:border-gray-800"
-                      >
-                        <div className="flex items-center gap-3">
-                          <UserAvatar
-                            profilePicture={result.avatar}
-                            fullName={result.name}
-                          />
-                          <div>
-                            <h4 className="font-medium text-gray-900 dark:text-white">
-                              {result.name}
-                            </h4>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">
-                              {result.mutualFriends} mutual friends
-                            </p>
+                  <div id="recommendationsScrollContainer" className="overflow-auto max-h-[70vh]">
+                    <InfiniteScroll
+                      dataLength={recommendationsArray.length}
+                      next={loadMoreRecommendations}
+                      hasMore={recommendationsHasMore}
+                      loader={<div className="text-center py-4">Loading more...</div>}
+                      endMessage={
+                        <p className="text-center mt-4 text-sm text-gray-500">
+                          All recommendations loaded!
+                        </p>
+                      }
+                      scrollableTarget="recommendationsScrollContainer"
+                    >
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {recommendationsArray.map((user) => (
+                          <div
+                            key={user._id}
+                            className="flex items-center justify-between p-4 rounded-lg border border-gray-200 dark:border-gray-800"
+                          >
+                            <div className="flex items-center gap-3">
+                              <UserAvatar
+                                profilePicture={user.profilePicture}
+                                fullName={user.fullName}
+                              />
+                              <div>
+                                <h4 className="font-medium text-gray-900 dark:text-white">
+                                  {user.fullName}
+                                </h4>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                  {user.email}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleRecommendation(user._id, false)}
+                              >
+                                <X className="h-4 w-4 mr-1" />
+                                Dismiss
+                              </Button>
+                              <Button
+                                size="sm"
+                                className="bg-purple-600 hover:bg-purple-700"
+                                onClick={() => handleRecommendation(user._id, true)}
+                              >
+                                <UserPlus className="h-4 w-4 mr-1" />
+                                Add
+                              </Button>
+                            </div>
                           </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() =>
-                              handleRecommendation(result.id, false)
-                            }
-                          >
-                            <X className="h-4 w-4 mr-1" />
-                            Dismiss
-                          </Button>
-                          <Button
-                            size="sm"
-                            className="bg-purple-600 hover:bg-purple-700"
-                            onClick={() =>
-                              handleRecommendation(result.id, true)
-                            }
-                          >
-                            <UserPlus className="h-4 w-4 mr-1" />
-                            Add
-                          </Button>
-                        </div>
+                        ))}
                       </div>
-                    ))}
+                    </InfiniteScroll>
                   </div>
                 )}
               </CardContent>
@@ -381,7 +397,7 @@ export default function Friends({
                     <div className="flex items-center justify-center gap-2 mt-4">
                       <Button
                         variant="outline"
-                        onClick={() => setActiveTab("requests")}
+                        onClick={() => onTabChange("requests")}
                       >
                         View Requests
                       </Button>
@@ -516,13 +532,7 @@ export default function Friends({
                     </div>
                   </form>
 
-                  {isSearching ? (
-                    <div className="text-center py-4">
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        Searching...
-                      </p>
-                    </div>
-                  ) : searchQuery && searchResults.length > 0 ? (
+                  {searchQuery && searchResults.length > 0 ? (
                     <div className="space-y-2 max-h-[200px] overflow-y-auto">
                       {searchResults.map((result) => (
                         <div
@@ -546,13 +556,7 @@ export default function Friends({
                           <Button
                             size="sm"
                             className="bg-purple-600 hover:bg-purple-700"
-                            onClick={() => {
-                              setAddFriendStatus("success");
-                              setAddFriendMessage(
-                                `Friend request sent to ${result.name}!`
-                              );
-                              setTimeout(() => setAddFriendStatus(null), 3000);
-                            }}
+                            onClick={() => handleRecommendation(result.id, true)}
                           >
                             <UserPlus className="h-4 w-4 mr-1" />
                             Add

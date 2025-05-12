@@ -1,59 +1,75 @@
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useState } from "react";
 import Friends from "@/components/Friends";
-import  friendService  from "@/services/FriendService";
+import friendService from "@/services/FriendService";
+import useSWR from "swr";
 
 const FriendPage = () => {
-    const [friends, setFriends] = useState([]);
-    const [pendingRequests, setPendingRequests] = useState([]);
-    const [sentRequests, setSentRequests] = useState([]);
-    const [searchResults, setSearchResults] = useState([]);
-    const [searchQuery, setSearchQuery] = useState("");
-    const [showSentRequests, setShowSentRequests] = useState(false);
-    
-    useEffect(() => {
-        const fetchFriends = async () => {
-            try {
-                const response = await friendService.getFriends();
-                setFriends(response.data);
-            } catch (error) {
-                console.error("Error fetching friends:", error);
-            }
-        };
-        const fetchPendingRequests = async () => {
-            try {
-                const response = await friendService.getPendingRequests();
-                setPendingRequests(response.data);
-            } catch (error) {
-                console.error("Error fetching pending requests:", error);
-            }
-        };
-        const fetchSentRequests = async () => {
-            try {
-                const response = await friendService.getSentRequests();
-                setSentRequests(response.data);
-            } catch (error) {
-                console.error("Error fetching sent requests:", error);
-            }
-        };
-        const fetchSearchResults = async () => {
-            try {
-                const response = await friendService.searchFriends(searchQuery);
-                setSearchResults(response.data);
-            } catch (error) {
-                console.error("Error fetching search results:", error);
-            }
-        };
-      
-        fetchFriends();
-        fetchPendingRequests();
-        fetchSentRequests();
-        fetchSearchResults();
-    }, [searchQuery]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showSentRequests, setShowSentRequests] = useState(false);
+  const [activeTab, setActiveTab] = useState("requests");
 
-    return (
-        <Suspense fallback={<div>Loading...</div>}>
-            <Friends friends={friends} pendingRequests={pendingRequests} sentRequests={sentRequests} searchResults={searchResults} searchQuery={searchQuery} setSearchQuery={setSearchQuery} showSentRequests={showSentRequests} setShowSentRequests={setShowSentRequests} />
-        </Suspense>
-    );
+  // SWR hooks for data fetching
+  const { data: friends = [], mutate: mutateFriends } = useSWR(
+    "friends",
+    () => friendService.getFriends().then(res => res.data)
+  );
+  
+  const { data: pendingRequests = [], mutate: mutatePendingRequests } = useSWR(
+    "pendingRequests",
+    () => friendService.getPendingRequests().then(res => res.data)
+  );
+  
+  const { data: sentRequests = [], mutate: mutateSentRequests } = useSWR(
+    "sentRequests",
+    () => friendService.getSentRequests().then(res => res.data)
+  );
+  
+  const { data: searchResults = [] } = useSWR(
+    searchQuery ? ["searchFriends", searchQuery] : null,
+    () => friendService.searchFriends(searchQuery).then(res => res.data)
+  );
+
+  const { data: recommendations = [] } = useSWR(
+    activeTab === "recommendations" ? "recommendations" : null,
+    () => friendService.getRecommendations().then(res => res.data)
+  );
+
+
+  // Function to fetch data based on active tab
+  const fetchData = async (tab) => {
+    setActiveTab(tab);
+    switch (tab) {
+      case "requests":
+        await mutatePendingRequests();
+        break;
+      case "friends":
+        await mutateFriends();
+        break;
+      case "sentRequests":
+        await mutateSentRequests();
+        break;
+      // For recommendations, the SWR hook will handle it when activeTab changes
+      default:
+        break;
+    }
+  };
+
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <Friends
+        friends={friends}
+        pendingRequests={pendingRequests}
+        sentRequests={sentRequests}
+        searchResults={searchQuery ? searchResults : recommendations}
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        showSentRequests={showSentRequests}
+        setShowSentRequests={setShowSentRequests}
+        onTabChange={fetchData}
+        activeTab={activeTab}
+      />
+    </Suspense>
+  );
 };
+
 export default FriendPage;

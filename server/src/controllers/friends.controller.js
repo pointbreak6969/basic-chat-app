@@ -7,61 +7,78 @@ import FriendRequest from "../models/Friend_Request.js";
 const getFriends = asyncHandler(async (req, res)=>{
     const userId = req.user._id;
     const friends = await Friend.aggregate([
-        {
+      {
+        $match: {
+        $or: [
+          { userA: userId },
+          { userB: userId }
+        ]
+        }
+      },
+      {
+        $project: {
+        _id: 0,
+        user: "$userA",
+        friend: "$userB"
+        }
+      },
+      {
+        $unionWith: {
+        coll: "friends",
+        pipeline: [
+          {
           $match: {
             $or: [
-              { userA: userId },
-              { userB: userId }
+            { userA: userId },
+            { userB: userId }
             ]
           }
-        },
-        {
+          },
+          {
           $project: {
             _id: 0,
-            user: "$userA",
-            friend: "$userB"
+            user: "$userB",
+            friend: "$userA"
           }
-        },
-        {
-          $unionWith: {
-            coll: "friends",
-            pipeline: [
-              {
-                $match: {
-                  $or: [
-                    { userA: userId },
-                    { userB: userId }
-                  ]
-                }
-              },
-              {
-                $project: {
-                  _id: 0,
-                  user: "$userB",
-                  friend: "$userA"
-                }
-              }
-            ]
           }
-        },
-        {
-          $match: {
-            user: userId
-          }
-        },
-        {
-          $group: {
-            _id: "$user",
-            friends: { $addToSet: "$friend" }
-          }
-        },
-        {
-          $project: {
-            user: "$_id",
-            friends: 1,
-            _id: 0
+        ]
+        }
+      },
+      {
+        $match: {
+        user: userId
+        }
+      },
+      {
+        $lookup: {
+        from: "users",
+        localField: "friend",
+        foreignField: "_id",
+        as: "friendDetails"
+        }
+      },
+      {
+        $unwind: "$friendDetails"
+      },
+      {
+        $group: {
+        _id: "$user",
+        friends: { 
+          $addToSet: {
+          _id: "$friend",
+          fullName: "$friendDetails.fullName",
+          profilePicture: "$friendDetails.profilePicture"
           }
         }
+        }
+      },
+      {
+        $project: {
+        user: "$_id",
+        friends: 1,
+        _id: 0
+        }
+      }
       ])
     return res.json(new ApiResponse(200, "Friends fetched succesfully", friends.length > 0 ? friends[0] : { user: userId, friends: [] }))
 })
@@ -166,7 +183,7 @@ const getPendingRequests = asyncHandler(async (req, res) => {
     const requests = await FriendRequest.find({
         recipient: userId,
         status: "pending"
-    }).populate("sender", "fullName email profilePicture");
+    }).select("sender").populate("sender", "fullName email profilePicture");
     
     return res.json(new ApiResponse(200, requests, "Pending friend requests fetched successfully"));
 });
@@ -177,7 +194,7 @@ const getSentRequests = asyncHandler(async (req, res) => {
     const requests = await FriendRequest.find({
         sender: userId,
         status: "pending"
-    }).populate("recipient", "fullName email profilePicture");
+    }).select("recipient").populate("recipient", "fullName email profilePicture");
     
     return res.json(new ApiResponse(200, requests, "Sent friend requests fetched successfully"));
 });

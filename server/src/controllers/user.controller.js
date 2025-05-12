@@ -2,7 +2,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import User from "../models/Users.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
-
+import Friends from "../models/Friends.js";
 const generateAccessAndRefreshToken = async (userId) => {
   try {
     const user = await User.findById(userId);
@@ -189,13 +189,33 @@ const exploreUsers = asyncHandler(async (req, res) => {
     }
     
     if (req.user?._id) {
-      searchFilter._id = { $ne: req.user._id };
+      // Find all friends of the current user
+      const friendships = await Friends.find({
+        $or: [
+          { requester: req.user._id },
+          { recipient: req.user._id }
+        ],
+        status: "accepted"
+      });
+      
+      // Extract friend IDs from the friendships
+      const friendIds = friendships.map(friendship => 
+        friendship.requester.toString() === req.user._id.toString() 
+          ? friendship.recipient 
+          : friendship.requester
+      );
+      
+      // Exclude current user and friends from results
+      searchFilter._id = { 
+        $ne: req.user._id,
+        $nin: friendIds
+      };
     }
     
     const options = {
       page,
       limit,
-      select: "-password -refreshToken -otp -otpExpiry",
+      select: "_id fullName email profilePicture",
       sort: { createdAt: -1 },
     };
     

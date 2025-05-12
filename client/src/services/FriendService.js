@@ -41,12 +41,40 @@ class FriendService {
             throw new Error("Failed to search friends");
         }
     }
+    
+    async getRecommendations(page = 1, limit = 10) {
+        try {
+            const response = await axiosInstance.get(`/user/explore?page=${page}&limit=${limit}`);
+            return response.data;
+        } catch (error) {
+            throw new Error("Failed to get friend recommendations");
+        }
+    }
+    
     async respondToFriendRequest(requestId, action) {
         try {
             const response = await axiosInstance.post("/friends/respondToFriendRequest", { requestId, action });
             return response.data;
         } catch (error) {
             throw new Error("Failed to respond to friend request");
+        }
+    }
+    
+    async respondToFriendRequest(requestId, action) {
+        try {
+            const response = await axiosInstance.post("/friends/respondToFriendRequest", { requestId, action });
+            return response.data;
+        } catch (error) {
+            throw new Error("Failed to respond to friend request");
+        }
+    }
+    
+    async sendFriendRequest(friendId) {
+        try {
+            const response = await axiosInstance.post("/friends/sendFriendRequest", { friendId });
+            return response.data;
+        } catch (error) {
+            throw new Error("Failed to send friend request");
         }
     }
 }
