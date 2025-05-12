@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from "react"
-import { Phone, Video, Info, Menu, Paperclip, Mic, Send, ImageIcon, File } from "lucide-react"
+import { Phone, Video, Info, ArrowLeft, Paperclip, Mic, Send, ImageIcon, File } from "lucide-react"
 import MessageBubble from "./MessageBuble"
 import UserAvatar from "./UserAvatar"
-import { useParams, useOutletContext, useSearchParams } from "react-router-dom"
+import { useParams, useOutletContext, useSearchParams, useNavigate } from "react-router-dom"
 
 // Mock data for conversations
 const mockConversations = [
@@ -196,6 +196,7 @@ function ChatArea() {
   const { conversationId } = useParams()
   const [searchParams] = useSearchParams()
   const [setIsMobileSidebarOpen] = useOutletContext()
+  const navigate = useNavigate()
   const [message, setMessage] = useState("")
   const [messages, setMessages] = useState([])
   const [showAttachmentOptions, setShowAttachmentOptions] = useState(false)
@@ -327,14 +328,13 @@ function ChatArea() {
         <div className="flex items-center">
           <button
             className="md:hidden mr-2 p-2 rounded-full hover:bg-gray-100"
-            onClick={() => setIsMobileSidebarOpen(true)}
+            onClick={() => navigate('/')}
           >
-            <Menu size={20} className="text-gray-600" />
+            <ArrowLeft size={20} className="text-gray-600" />
           </button>
           <UserAvatar
-            src={getConversationAvatar()}
-            size="md"
-            status={activeConversation.type === "private" ? "online" : undefined}
+            profilePicture={getConversationAvatar()}
+            fullName={getConversationTitle()}
           />
           <div className="ml-3">
             <p className="font-medium">{getConversationTitle()}</p>

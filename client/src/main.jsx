@@ -10,7 +10,16 @@ import Signup from "./pages/Signup.jsx";
 import Protected from "./auth/Protected.jsx";
 import Home from "./components/Home.jsx";
 import ChatArea from "./components/ChatArea.jsx";
+import Settings from "./pages/Settings.jsx";
+import Friends from "./pages/Friends.jsx";
+import ForgotPasswordPage from "./pages/ForgetPassword.jsx";
 
+const publicRoutes = [
+  {
+    path: "/forgot-password",
+    element: <ForgotPasswordPage />
+  }
+]
 // Define auth routes (accessible only when logged out)
 const authRoutes = [
   {
@@ -43,7 +52,7 @@ const protectedRoutes = [
     children: [
       { 
         path: "", 
-        element: <div className="flex-1 flex items-center justify-center bg-gray-50">
+        element: <div className="hidden md:flex flex-1 items-center justify-center bg-gray-50">
           <div className="text-center">
             <h2 className="text-2xl font-semibold text-gray-700">Welcome to Chatty</h2>
             <p className="text-gray-500 mt-2">Select a conversation to start chatting</p>
@@ -56,6 +65,22 @@ const protectedRoutes = [
       }
     ]
   },
+  {
+    path: "/settings",
+    element: (
+      <Protected authentication={true}>
+        <Settings />
+      </Protected>
+    ),
+  }, 
+  {
+    path: "/friends",
+    element: (
+      <Protected authentication={true}>
+        <Friends />
+      </Protected>
+    ),
+  },
 ];
 
 const router = createBrowserRouter([
@@ -66,7 +91,7 @@ const router = createBrowserRouter([
         <App />
       </Suspense>
     ),
-    children: [...authRoutes, ...protectedRoutes],
+    children: [...authRoutes, ...protectedRoutes, ...publicRoutes],
   },
 ]);
 
