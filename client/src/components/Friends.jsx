@@ -1,5 +1,5 @@
 import { Label } from "./ui/label";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import {
   ArrowLeft,
@@ -36,23 +36,94 @@ import {
   DialogTitle,
 } from "./ui/dialog";
 import { Alert, AlertDescription } from "./ui/alert";
+import friendService from "@/services/FriendService";
 
-
-export default function FriendsPage() {
+export default function Friends({
+  friends,
+  pendingRequests,
+  sentRequests,
+  searchResults,
+  searchQuery,
+  setSearchQuery,
+  showSentRequests,
+  setShowSentRequests,
+}) {
   const [activeTab, setActiveTab] = useState("requests");
-  const [friendRequests, setFriendRequests] = useState(MOCK_FRIEND_REQUESTS);
-  const [recommendations, setRecommendations] = useState(MOCK_RECOMMENDATIONS);
-  const [friends, setFriends] = useState(MOCK_FRIENDS);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState([]);
-  const [isSearching, setIsSearching] = useState(false);
   const [showAddFriendDialog, setShowAddFriendDialog] = useState(false);
   const [friendUsername, setFriendUsername] = useState("");
-  const [addFriendStatus, setAddFriendStatus] =
-    (useState < null) | "success" | ("error" > null);
+  const [addFriendStatus, setAddFriendStatus] = useState(null);
   const [addFriendMessage, setAddFriendMessage] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
 
- 
+  const filteredFriends = useMemo(() => {
+    if (!Array.isArray(friends)) return [];
+    if (!searchQuery) return friends;
+    return friends.filter((friend) =>
+      friend?.name?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [friends, searchQuery]);
+
+  const handleFriendRequest = async (requestId, accept) => {
+    try {
+      if (accept) {
+        await friendService.acceptFriendRequest(requestId);
+      } else {
+        await friendService.rejectFriendRequest(requestId);
+      }
+      // Refresh the pending requests list
+      const response = await friendService.getPendingRequests();
+      setPendingRequests(response.data);
+    } catch (error) {
+      console.error("Error handling friend request:", error);
+    }
+  };
+
+  const handleRecommendation = async (userId, add) => {
+    try {
+      if (add) {
+        await friendService.sendFriendRequest(userId);
+        setAddFriendStatus("success");
+        setAddFriendMessage("Friend request sent successfully!");
+      } else {
+        // Handle dismissing recommendation
+        // This would typically be handled by the backend
+        console.log("Dismissed recommendation:", userId);
+      }
+    } catch (error) {
+      console.error("Error handling recommendation:", error);
+      setAddFriendStatus("error");
+      setAddFriendMessage("Failed to send friend request. Please try again.");
+    }
+  };
+
+  const handleSearch = async (e) => {
+    e.preventDefault();
+    setIsSearching(true);
+    try {
+      const response = await friendService.searchFriends(searchQuery);
+      setSearchResults(response.data);
+    } catch (error) {
+      console.error("Error searching friends:", error);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleAddFriend = async () => {
+    if (!friendUsername.trim()) return;
+
+    try {
+      await friendService.sendFriendRequest(friendUsername);
+      setAddFriendStatus("success");
+      setAddFriendMessage(`Friend request sent to ${friendUsername}!`);
+      setFriendUsername("");
+      setTimeout(() => setAddFriendStatus(null), 3000);
+    } catch (error) {
+      console.error("Error adding friend:", error);
+      setAddFriendStatus("error");
+      setAddFriendMessage("Failed to send friend request. Please try again.");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-950">
@@ -91,9 +162,9 @@ export default function FriendsPage() {
             <TabsTrigger value="requests" className="flex items-center gap-2">
               <Bell className="h-4 w-4" />
               <span>Requests</span>
-              {friendRequests.length > 0 && (
+              {pendingRequests.length > 0 && (
                 <Badge className="ml-1 bg-purple-600 hover:bg-purple-700">
-                  {friendRequests.length}
+                  {pendingRequests.length}
                 </Badge>
               )}
             </TabsTrigger>
@@ -120,7 +191,7 @@ export default function FriendsPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {friendRequests.length === 0 ? (
+                {pendingRequests.length === 0 ? (
                   <div className="text-center py-8">
                     <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900 mb-4">
                       <Bell className="h-6 w-6 text-purple-600 dark:text-purple-300" />
@@ -142,7 +213,7 @@ export default function FriendsPage() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {friendRequests.map((request) => (
+                    {pendingRequests.map((request) => (
                       <div
                         key={request.id}
                         className="flex items-center justify-between p-4 rounded-lg border border-gray-200 dark:border-gray-800"
@@ -202,7 +273,7 @@ export default function FriendsPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {recommendations.length === 0 ? (
+                {searchResults.length === 0 ? (
                   <div className="text-center py-8">
                     <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900 mb-4">
                       <UserRoundPlus className="h-6 w-6 text-purple-600 dark:text-purple-300" />
@@ -211,8 +282,7 @@ export default function FriendsPage() {
                       No recommendations
                     </h3>
                     <p className="text-sm text-gray-500 dark:text-gray-400 max-w-sm mx-auto">
-                      We don't have any friend recommendations for you right
-                      now. Check back later!
+                      Try searching for people to connect with
                     </p>
                     <Button
                       variant="link"
@@ -224,22 +294,22 @@ export default function FriendsPage() {
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {recommendations.map((recommendation) => (
+                    {searchResults.map((result) => (
                       <div
-                        key={recommendation.id}
+                        key={result.id}
                         className="flex items-center justify-between p-4 rounded-lg border border-gray-200 dark:border-gray-800"
                       >
                         <div className="flex items-center gap-3">
                           <UserAvatar
-                            profilePicture={recommendation.avatar}
-                            fullName={recommendation.name}
+                            profilePicture={result.avatar}
+                            fullName={result.name}
                           />
                           <div>
                             <h4 className="font-medium text-gray-900 dark:text-white">
-                              {recommendation.name}
+                              {result.name}
                             </h4>
                             <p className="text-xs text-gray-500 dark:text-gray-400">
-                              {recommendation.mutualFriends} mutual friends
+                              {result.mutualFriends} mutual friends
                             </p>
                           </div>
                         </div>
@@ -248,7 +318,7 @@ export default function FriendsPage() {
                             size="sm"
                             variant="outline"
                             onClick={() =>
-                              handleRecommendation(recommendation.id, false)
+                              handleRecommendation(result.id, false)
                             }
                           >
                             <X className="h-4 w-4 mr-1" />
@@ -258,7 +328,7 @@ export default function FriendsPage() {
                             size="sm"
                             className="bg-purple-600 hover:bg-purple-700"
                             onClick={() =>
-                              handleRecommendation(recommendation.id, true)
+                              handleRecommendation(result.id, true)
                             }
                           >
                             <UserPlus className="h-4 w-4 mr-1" />

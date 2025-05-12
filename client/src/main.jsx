@@ -11,7 +11,7 @@ import Protected from "./auth/Protected.jsx";
 import Home from "./components/Home.jsx";
 import ChatArea from "./components/ChatArea.jsx";
 import Settings from "./pages/Settings.jsx";
-import Friends from "./pages/Friends.jsx";
+import Friends from "./pages/FriendPage.jsx";
 import ForgotPasswordPage from "./pages/ForgetPassword.jsx";
 
 const publicRoutes = [
