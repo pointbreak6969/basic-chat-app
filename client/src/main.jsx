@@ -9,24 +9,7 @@ import Login from "./pages/Login.jsx";
 import Signup from "./pages/Signup.jsx";
 import Protected from "./auth/Protected.jsx";
 import Home from "./components/Home.jsx";
-// Define public routes
-// const publicRoutes = [
-//   {
-//     path: "/",
-//     element: (
-//       <Protected authentication={false} redirectPath="/classroom">
-//         {" "}
-//         <Home />
-//       </Protected>
-//     ),
-//   },
-//   { path: "/userAvatar", element: <UserAvatar /> },
-//   { path: "/courses", element: <Courses /> },
-//   { path: "/contact", element: <Contact /> },
-//   { path: "/about", element: <About /> },
-//   { path: "/canvas", element: <Canvas /> },
-//   { path: "/verifyotp", element: <VerifyOtp /> },
-// ];
+import ChatArea from "./components/ChatArea.jsx";
 
 // Define auth routes (accessible only when logged out)
 const authRoutes = [
@@ -57,9 +40,24 @@ const protectedRoutes = [
         <Home />
       </Protected>
     ),
+    children: [
+      { 
+        path: "", 
+        element: <div className="flex-1 flex items-center justify-center bg-gray-50">
+          <div className="text-center">
+            <h2 className="text-2xl font-semibold text-gray-700">Welcome to Chatty</h2>
+            <p className="text-gray-500 mt-2">Select a conversation to start chatting</p>
+          </div>
+        </div>
+      },
+      { 
+        path: "chat/:conversationId", 
+        element: <ChatArea /> 
+      }
+    ]
   },
-
 ];
+
 const router = createBrowserRouter([
   {
     path: "/",

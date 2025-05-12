@@ -1,7 +1,7 @@
 import mongoose, { Schema } from "mongoose";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-
+import mongoosePaginate from "mongoose-paginate-v2";
 const UserSchema = new Schema(
   {
     fullName: {
@@ -79,5 +79,6 @@ UserSchema.methods.generateRefreshToken = function () {
     }
   );
 };
+UserSchema.plugin(mongoosePaginate);
 const User = mongoose.model("User", UserSchema);
 export default User;

@@ -161,10 +161,67 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
   }
 });
 
+// const searchUsers = asyncHandler(async (req, res)=>{
+//   const {query} = req.query
+//   if(!query) return next(new ApiError(400, "Query is required"))
+//   const users = await User.find({
+//     $or: [
+//       {fullName: {$regex: query, $options: "i"}},
+//       {email: {$regex: query, $options: "i"}}
+//     ]
+//   }).select("-password -refreshToken -otp -otpExpiry")
+//   if(!users) return next(new ApiError(404, "No users found"))
+//   return res.json(new ApiResponse(200, users, "Users found successfully"))
+// })
+
+const exploreUsers = asyncHandler(async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const searchQuery = req.query.search || "";
+    
+    const searchFilter = {};
+    if (searchQuery) {
+      searchFilter.$or = [
+        { fullName: { $regex: searchQuery, $options: "i" } },
+        { email: { $regex: searchQuery, $options: "i" } },
+      ];
+    }
+    
+    if (req.user?._id) {
+      searchFilter._id = { $ne: req.user._id };
+    }
+    
+    const options = {
+      page,
+      limit,
+      select: "-password -refreshToken -otp -otpExpiry",
+      sort: { createdAt: -1 },
+    };
+    
+    const result = await User.paginate(searchFilter, options);
+    
+    return res.json(
+      new ApiResponse(200, {
+        users: result.docs,
+        totalUsers: result.totalDocs,
+        totalPages: result.totalPages,
+        currentPage: result.page,
+        hasNextPage: result.hasNextPage,
+        hasPrevPage: result.hasPrevPage
+      }, "Users retrieved successfully")
+    );
+  } catch (error) {
+    throw new ApiError(500, "Error retrieving users: " + error.message);
+  }
+});
+
 export {
   registerUser,
   loginUser,
   logoutUser,
   getCurrentUser,
   refreshAccessToken,
+  // searchUsers,
+  exploreUsers
 };

@@ -1,6 +1,6 @@
 import UserAvatar from "./UserAvatar"
 
-function ConversationItem({ conversation, isActive, onClick, currentUser }) {
+function ConversationItem({ conversation, isActive, currentUser }) {
   const getTitle = () => {
     if (conversation.type === "private") {
       return conversation.participants[0].fullName
@@ -52,9 +52,8 @@ function ConversationItem({ conversation, isActive, onClick, currentUser }) {
   return (
     <div
       className={`p-3 flex items-center hover:bg-gray-100 cursor-pointer ${isActive ? "bg-gray-100" : ""}`}
-      onClick={onClick}
     >
-      <UserAvatar src={getAvatar()} size="md" status={Math.random() > 0.5 ? "online" : "offline"} />
+      <UserAvatar profilePicture={getAvatar()} fullName={getTitle()} />
       <div className="ml-3 flex-1 min-w-0">
         <div className="flex justify-between items-center">
           <p className="font-medium truncate">{getTitle()}</p>

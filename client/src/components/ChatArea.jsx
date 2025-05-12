@@ -2,6 +2,79 @@ import { useState, useRef, useEffect } from "react"
 import { Phone, Video, Info, Menu, Paperclip, Mic, Send, ImageIcon, File } from "lucide-react"
 import MessageBubble from "./MessageBuble"
 import UserAvatar from "./UserAvatar"
+import { useParams, useOutletContext, useSearchParams } from "react-router-dom"
+
+// Mock data for conversations
+const mockConversations = [
+  {
+    _id: "1",
+    type: "private",
+    participants: [{ _id: "2", fullName: "Jane Smith", profilePicture: "/placeholder.svg?height=40&width=40" }],
+    lastMessage: {
+      text: "Hey, how are you doing?",
+      timeStamp: new Date(Date.now() - 1000 * 60 * 5),
+      status: "seen",
+    },
+  },
+  {
+    _id: "2",
+    type: "private",
+    participants: [{ _id: "3", fullName: "John Doe", profilePicture: "/placeholder.svg?height=40&width=40" }],
+    lastMessage: {
+      text: "Can we meet tomorrow?",
+      timeStamp: new Date(Date.now() - 1000 * 60 * 30),
+      status: "delivered",
+    },
+  },
+  {
+    _id: "3",
+    type: "group",
+    participants: [
+      { _id: "2", fullName: "Jane Smith", profilePicture: "/placeholder.svg?height=40&width=40" },
+      { _id: "3", fullName: "John Doe", profilePicture: "/placeholder.svg?height=40&width=40" },
+      { _id: "4", fullName: "Mike Johnson", profilePicture: "/placeholder.svg?height=40&width=40" },
+    ],
+    metadata: {
+      name: "Project Team",
+      description: "Team discussion",
+      avatar: "/placeholder.svg?height=40&width=40",
+    },
+    lastMessage: {
+      text: "Meeting at 3pm",
+      timeStamp: new Date(Date.now() - 1000 * 60 * 60 * 2),
+      status: "sent",
+    },
+  },
+  {
+    _id: "4",
+    type: "private",
+    participants: [{ _id: "5", fullName: "Sarah Williams", profilePicture: "/placeholder.svg?height=40&width=40" }],
+    lastMessage: {
+      text: "Thanks for your help!",
+      timeStamp: new Date(Date.now() - 1000 * 60 * 60 * 24),
+      status: "seen",
+    },
+  },
+  {
+    _id: "5",
+    type: "group",
+    participants: [
+      { _id: "6", fullName: "Alex Brown", profilePicture: "/placeholder.svg?height=40&width=40" },
+      { _id: "7", fullName: "Emily Davis", profilePicture: "/placeholder.svg?height=40&width=40" },
+      { _id: "8", fullName: "Chris Wilson", profilePicture: "/placeholder.svg?height=40&width=40" },
+    ],
+    metadata: {
+      name: "Friends Group",
+      description: "Weekend plans",
+      avatar: "/placeholder.svg?height=40&width=40",
+    },
+    lastMessage: {
+      text: "Who's free this weekend?",
+      timeStamp: new Date(Date.now() - 1000 * 60 * 60 * 48),
+      status: "seen",
+    },
+  },
+]
 
 // Mock messages for the active conversation
 const getMockMessages = (conversationId) => {
@@ -119,19 +192,75 @@ const getMockMessages = (conversationId) => {
   return baseMessages
 }
 
-function ChatArea({ activeConversation, setIsMobileSidebarOpen }) {
+function ChatArea() {
+  const { conversationId } = useParams()
+  const [searchParams] = useSearchParams()
+  const [setIsMobileSidebarOpen] = useOutletContext()
   const [message, setMessage] = useState("")
   const [messages, setMessages] = useState([])
   const [showAttachmentOptions, setShowAttachmentOptions] = useState(false)
+  const [activeConversation, setActiveConversation] = useState(null)
   const messagesEndRef = useRef(null)
+
+  // Check if this is a new conversation from friend selection
+  const isNewConversation = searchParams.get('new') === 'true'
+  const friendId = searchParams.get('friendId')
+  const friendName = searchParams.get('friendName')
+
+  // Find the active conversation based on URL param
+  useEffect(() => {
+    if (conversationId) {
+      // In a real app you would fetch this from an API
+      // For now, we use the mock data
+      const conversation = mockConversations.find(conv => conv._id === conversationId)
+      
+      // If this is a "new" conversation from selecting a friend in the sidebar
+      if (isNewConversation && friendId && friendName && conversation) {
+        // Override conversation participant info with the selected friend info
+        // This is just for demo purposes - in a real app, you'd create a proper conversation
+        const modifiedConversation = {
+          ...conversation,
+          participants: [
+            {
+              _id: friendId,
+              fullName: friendName,
+              profilePicture: "/placeholder.svg?height=40&width=40"
+            }
+          ]
+        }
+        setActiveConversation(modifiedConversation)
+      } else {
+        setActiveConversation(conversation || null)
+      }
+    } else {
+      setActiveConversation(null)
+    }
+  }, [conversationId, isNewConversation, friendId, friendName])
 
   useEffect(() => {
     if (activeConversation) {
-      setMessages(getMockMessages(activeConversation._id))
+      let conversationMessages = getMockMessages(activeConversation._id)
+      
+      // If this is a new conversation from friend selection, add a welcome message
+      if (isNewConversation && friendId) {
+        const welcomeMessage = {
+          _id: "welcome-" + Date.now(),
+          sender: { _id: "1", fullName: "You", profilePicture: "/placeholder.svg?height=40&width=40" },
+          type: "text",
+          content: { type: "text", text: `Hey ${friendName}! I just wanted to say hello.` },
+          status: "sent",
+          timestamp: new Date(),
+        }
+        
+        // Add welcome message to beginning of conversation
+        conversationMessages = [...conversationMessages, welcomeMessage]
+      }
+      
+      setMessages(conversationMessages)
     } else {
       setMessages([])
     }
-  }, [activeConversation])
+  }, [activeConversation, isNewConversation, friendId, friendName])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
