@@ -172,7 +172,6 @@ const removeFriend = asyncHandler(async (req, res, next) => {
 const respondToFriendRequest = asyncHandler(async (req, res, next) => {
   const userId = req.user._id;
   const { requestId, accept } = req.body;
-
   if (!requestId) return next(new ApiError(400, "Request ID is required"));
 
   const friendRequest = await FriendRequest.findOne({
@@ -185,7 +184,7 @@ const respondToFriendRequest = asyncHandler(async (req, res, next) => {
     return next(new ApiError(404, "Friend request not found"));
   }
 
-  if (accept) {
+  if (accept === "true") {
     // Create a new friend connection
     await Friend.create({
       userA: friendRequest.sender,

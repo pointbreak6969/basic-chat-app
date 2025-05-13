@@ -4,7 +4,7 @@ import { ArrowLeft, UserPlus } from "lucide-react";
 import { Button } from "./ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import friendService from "@/services/FriendService";
-
+import {toast} from "sonner"
 // Import new components
 import FriendsHeader from "./friends/FriendsHeader";
 import FriendsTabsList from "./friends/FriendsTabsList";
@@ -35,7 +35,7 @@ export default function Friends({
       ? searchResults
       : searchResults?.users || [];
     setRecommendations(initialRecommendations);
-  }, [searchResults]);
+  }, [searchResults, addFriendStatus]);
 
   const filteredFriends = useMemo(() => {
     if (!Array.isArray(friends)) return [];
@@ -48,9 +48,9 @@ export default function Friends({
   const handleFriendRequest = async (requestId, accept) => {
     try {
       if (accept) {
-        await friendService.acceptFriendRequest(requestId);
+        await friendService.respondToFriendRequest(requestId, "true");
       } else {
-        await friendService.rejectFriendRequest(requestId);
+        await friendService.respondToFriendRequest(requestId, "false");
       }
       onTabChange("requests");
     } catch (error) {
@@ -63,7 +63,7 @@ export default function Friends({
       if (add) {
         await friendService.addFriend(userId);
         setAddFriendStatus("success");
-        setAddFriendMessage("Friend request sent successfully!");
+        toast.success("Friend request sent!");
       } else {
         setRecommendations(prevRecommendations => 
           prevRecommendations.filter(user => user._id !== userId)

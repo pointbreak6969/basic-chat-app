@@ -7,7 +7,6 @@ import {
   CardHeader,
   CardTitle,
 } from "../ui/card";
-import UserAvatar from "../UserAvatar";
 import RequestCard from "./RequestCard";
 
 export default function PendingRequestsTab({ pendingRequests, onTabChange, onHandleRequest }) {
@@ -57,7 +56,7 @@ export default function PendingRequestsTab({ pendingRequests, onTabChange, onHan
         <div className="space-y-4">
           {pendingRequests.map((request) => (
             <RequestCard 
-              key={request.id}
+              key={request._id}
               request={request}
               onHandleRequest={onHandleRequest}
             />

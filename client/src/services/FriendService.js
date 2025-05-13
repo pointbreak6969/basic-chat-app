@@ -35,9 +35,10 @@ class FriendService {
         }
     }
     
-    async respondToFriendRequest(requestId, action) {
+    async respondToFriendRequest(requestId, accept) {
         try {
-            const response = await axiosInstance.post("/friends/respondToFriendRequest", { requestId, action });
+            console.log("Responding to friend request:", { requestId, accept });
+            const response = await axiosInstance.post("/friends/respondToFriendRequest", { requestId, accept });
             return response.data;
         } catch (error) {
             throw new Error("Failed to respond to friend request");

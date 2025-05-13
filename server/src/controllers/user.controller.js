@@ -3,6 +3,7 @@ import { ApiError } from "../utils/ApiError.js";
 import User from "../models/Users.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import Friends from "../models/Friends.js";
+import FriendRequest from "../models/Friend_Request.js";
 const generateAccessAndRefreshToken = async (userId) => {
   try {
     const user = await User.findById(userId);
@@ -190,11 +191,24 @@ const exploreUsers = asyncHandler(async (req, res) => {
           ? friendship.userB 
           : friendship.userA
       );
-      // // Exclude current user and friends from results
-      searchFilter._id = { 
-        $ne: req.user._id,
-        $nin: friendIds
-      };
+      const friendRequests = await FriendRequest.find({
+        $or: [
+          { sender: req.user._id },
+          { recipient: req.user._id }
+        ],
+      });
+    // Extract friend request IDs
+    const friendRequestIds = friendRequests.map(request => 
+      request.sender.toString() === req.user._id.toString() 
+        ? request.recipient 
+        : request.sender
+    );
+
+    // Exclude current user, friends, and pending friend requests from results
+    searchFilter._id = { 
+      $ne: req.user._id,
+      $nin: [...friendIds, ...friendRequestIds] // Exclude both friends and friend requests
+    };
     }
     
     const options = {

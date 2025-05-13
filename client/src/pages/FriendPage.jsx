@@ -18,6 +18,7 @@ const FriendPage = () => {
     "pendingRequests",
     () => friendService.getPendingRequests().then(res => res.data)
   );
+  console.log("Pending Requests", pendingRequests);
   
   const { data: sentRequests = [], mutate: mutateSentRequests } = useSWR(
     "sentRequests",
