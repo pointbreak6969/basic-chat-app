@@ -15,6 +15,7 @@ Users,
   Moon,
   Sun,
   ArrowLeft,
+  Image,
 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Switch } from "../components/ui/switch";
@@ -37,6 +38,7 @@ const Settings = () => {
   const [notifications, setNotifications] = useState(true);
   const [username, setUsername] = useState("JohnDoe");
   const [showRemoveFriendDialog, setShowRemoveFriendDialog] = useState(false);
+  const [profilePicture, setProfilePicture] = useState("https://via.placeholder.com/100");
   const handleLogout = () => {
     // Implement logout logic here
     console.log("Logging out...");
@@ -94,6 +96,80 @@ const Settings = () => {
                       onChange={(e) => setUsername(e.target.value)}
                       className="mt-2"
                     />
+                  </div>
+                  <DialogFooter>
+                    <DialogClose asChild>
+                      <Button variant="outline">Cancel</Button>
+                    </DialogClose>
+                    <Button className="bg-purple-600 hover:bg-purple-700">Save Changes</Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+
+              <Dialog>
+                <DialogTrigger asChild>
+                  <button className="w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <Image className="h-5 w-5 text-purple-600" />
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Change Profile Picture</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="h-8 w-8 rounded-full overflow-hidden">
+                        <img 
+                          src={profilePicture} 
+                          alt="Profile" 
+                          className="h-full w-full object-cover" 
+                        />
+                      </div>
+                      <ChevronRight className="h-4 w-4 text-gray-400" />
+                    </div>
+                  </button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Profile Picture</DialogTitle>
+                    <DialogDescription>
+                      Upload a new profile picture or change your existing one.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="py-4 flex flex-col items-center gap-4">
+                    <div className="h-24 w-24 rounded-full overflow-hidden border-2 border-gray-200 dark:border-gray-700">
+                      <img 
+                        src={profilePicture} 
+                        alt="Profile" 
+                        className="h-full w-full object-cover" 
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <Label 
+                        htmlFor="picture-upload" 
+                        className="flex items-center gap-2 cursor-pointer bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-md text-sm font-medium"
+                      >
+                        <Image className="h-4 w-4" />
+                        Choose Image
+                      </Label>
+                      <Input
+                        id="picture-upload"
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          if (e.target.files && e.target.files[0]) {
+                            const reader = new FileReader();
+                            reader.onload = (event) => {
+                              setProfilePicture(event.target.result);
+                            };
+                            reader.readAsDataURL(e.target.files[0]);
+                          }
+                        }}
+                      />
+                      <Button 
+                        variant="outline" 
+                        onClick={() => setProfilePicture("https://via.placeholder.com/100")}
+                      >
+                        Reset
+                      </Button>
+                    </div>
                   </div>
                   <DialogFooter>
                     <DialogClose asChild>
