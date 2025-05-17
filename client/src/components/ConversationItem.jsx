@@ -2,19 +2,11 @@ import UserAvatar from "./UserAvatar"
 
 function ConversationItem({ conversation, isActive, currentUser }) {
   const getTitle = () => {
-    if (conversation.type === "private") {
-      return conversation.participants[0].fullName
-    } else {
-      return conversation.metadata.name
-    }
+    return conversation.displayName || "Unnamed Conversation";
   }
 
   const getAvatar = () => {
-    if (conversation.type === "private") {
-      return conversation.participants[0].profilePicture
-    } else {
-      return conversation.metadata.avatar
-    }
+    return conversation.displayPicture || null;
   }
 
   const formatTime = (timestamp) => {
@@ -49,6 +41,22 @@ function ConversationItem({ conversation, isActive, currentUser }) {
     }
   }
 
+  const getLastMessagePreview = () => {
+    if (!conversation.lastMessage) {
+      return "No messages yet";
+    }
+    
+    return conversation.lastMessage.text || "";
+  }
+  
+  const getLastMessageTime = () => {
+    if (!conversation.lastMessage || !conversation.lastMessage.timestamp) {
+      return "";
+    }
+    
+    return formatTime(conversation.lastMessage.timestamp);
+  }
+
   return (
     <div
       className={`p-3 flex items-center hover:bg-gray-100 cursor-pointer ${isActive ? "bg-gray-100" : ""}`}
@@ -58,12 +66,14 @@ function ConversationItem({ conversation, isActive, currentUser }) {
         <div className="flex justify-between items-center">
           <p className="font-medium truncate">{getTitle()}</p>
           <span className="text-xs text-gray-500 whitespace-nowrap ml-1">
-            {formatTime(conversation.lastMessage.timeStamp)}
+            {getLastMessageTime()}
           </span>
         </div>
         <div className="flex items-center text-sm text-gray-500">
-          <p className="truncate flex-1">{conversation.lastMessage.text}</p>
-          <div className="ml-1 flex-shrink-0">{getStatusIcon(conversation.lastMessage.status)}</div>
+          <p className="truncate flex-1">{getLastMessagePreview()}</p>
+          <div className="ml-1 flex-shrink-0">
+            {conversation.lastMessage && getStatusIcon(conversation.lastMessage.status)}
+          </div>
         </div>
       </div>
     </div>

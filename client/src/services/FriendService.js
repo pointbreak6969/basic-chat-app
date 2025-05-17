@@ -4,7 +4,6 @@ class FriendService {
     async getFriends(query) {
         try {
             const response = await axiosInstance.get(`/friends/getFriends?query=${query}`);
-            // console.log("Friends data:", response.data);
             return response.data;
         } catch (error) {
             throw new Error("Failed to fetch friends");

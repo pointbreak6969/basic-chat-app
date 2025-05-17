@@ -6,219 +6,50 @@ import ConversationItem from "./ConversationItem";
 import UserAvatar from "./UserAvatar";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
-// Mock data for conversations
-const mockConversations = [
-  {
-    _id: "1",
-    type: "private",
-    participants: [
-      {
-        _id: "2",
-        fullName: "Jane Smith",
-        profilePicture: "/placeholder.svg?height=40&width=40",
-      },
-    ],
-    lastMessage: {
-      text: "Hey, how are you doing?",
-      timeStamp: new Date(Date.now() - 1000 * 60 * 5),
-      status: "seen",
-    },
-  },
-  {
-    _id: "2",
-    type: "private",
-    participants: [
-      {
-        _id: "3",
-        fullName: "John Doe",
-        profilePicture: "/placeholder.svg?height=40&width=40",
-      },
-    ],
-    lastMessage: {
-      text: "Can we meet tomorrow?",
-      timeStamp: new Date(Date.now() - 1000 * 60 * 30),
-      status: "delivered",
-    },
-  },
-  {
-    _id: "3",
-    type: "group",
-    participants: [
-      {
-        _id: "2",
-        fullName: "Jane Smith",
-        profilePicture: "/placeholder.svg?height=40&width=40",
-      },
-      {
-        _id: "3",
-        fullName: "John Doe",
-        profilePicture: "/placeholder.svg?height=40&width=40",
-      },
-      {
-        _id: "4",
-        fullName: "Mike Johnson",
-        profilePicture: "/placeholder.svg?height=40&width=40",
-      },
-    ],
-    metadata: {
-      name: "Project Team",
-      description: "Team discussion",
-      avatar: "/placeholder.svg?height=40&width=40",
-    },
-    lastMessage: {
-      text: "Meeting at 3pm",
-      timeStamp: new Date(Date.now() - 1000 * 60 * 60 * 2),
-      status: "sent",
-    },
-  },
-  {
-    _id: "4",
-    type: "private",
-    participants: [
-      {
-        _id: "5",
-        fullName: "Sarah Williams",
-        profilePicture: "/placeholder.svg?height=40&width=40",
-      },
-    ],
-    lastMessage: {
-      text: "Thanks for your help!",
-      timeStamp: new Date(Date.now() - 1000 * 60 * 60 * 24),
-      status: "seen",
-    },
-  },
-  {
-    _id: "5",
-    type: "group",
-    participants: [
-      {
-        _id: "6",
-        fullName: "Alex Brown",
-        profilePicture: "/placeholder.svg?height=40&width=40",
-      },
-      {
-        _id: "7",
-        fullName: "Emily Davis",
-        profilePicture: "/placeholder.svg?height=40&width=40",
-      },
-      {
-        _id: "8",
-        fullName: "Chris Wilson",
-        profilePicture: "/placeholder.svg?height=40&width=40",
-      },
-    ],
-    metadata: {
-      name: "Friends Group",
-      description: "Weekend plans",
-      avatar: "/placeholder.svg?height=40&width=40",
-    },
-    lastMessage: {
-      text: "Who's free this weekend?",
-      timeStamp: new Date(Date.now() - 1000 * 60 * 60 * 48),
-      status: "seen",
-    },
-  },
-];
-
-// Mock data for friends
-const mockFriends = [
-  {
-    _id: "2",
-    fullName: "Jane Smith",
-    profilePicture: "/placeholder.svg?height=40&width=40",
-    status: "online",
-  },
-  {
-    _id: "3",
-    fullName: "John Doe",
-    profilePicture: "/placeholder.svg?height=40&width=40",
-    status: "offline",
-  },
-  {
-    _id: "4",
-    fullName: "Mike Johnson",
-    profilePicture: "/placeholder.svg?height=40&width=40",
-    status: "online",
-  },
-  {
-    _id: "5",
-    fullName: "Sarah Williams",
-    profilePicture: "/placeholder.svg?height=40&width=40",
-    status: "offline",
-  },
-  {
-    _id: "6",
-    fullName: "Alex Brown",
-    profilePicture: "/placeholder.svg?height=40&width=40",
-    status: "online",
-  },
-  {
-    _id: "7",
-    fullName: "Emily Davis",
-    profilePicture: "/placeholder.svg?height=40&width=40",
-    status: "online",
-  },
-  {
-    _id: "8",
-    fullName: "Chris Wilson",
-    profilePicture: "/placeholder.svg?height=40&width=40",
-    status: "offline",
-  },
-  {
-    _id: "9",
-    fullName: "Lisa Taylor",
-    profilePicture: "/placeholder.svg?height=40&width=40",
-    status: "online",
-  },
-  {
-    _id: "10",
-    fullName: "David Miller",
-    profilePicture: "/placeholder.svg?height=40&width=40",
-    status: "offline",
-  },
-];
-
-// Mock current user
-// const currentUser = {
-//   _id: "1",
-//   fullName: "You",
-//   profilePicture: "/placeholder.svg?height=40&width=40",
-// }
+import friendService from "@/services/FriendService";
+import conversationService from "@/services/conversationService";
+import useSWR from "swr";
 
 function Sidebar({ isMobileSidebarOpen, setIsMobileSidebarOpen }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [showFriendsList, setShowFriendsList] = useState(false);
+  const [filteredFriends, setFilteredFriends] = useState([]);
   const [friendSearchQuery, setFriendSearchQuery] = useState("");
-  const [filteredFriends, setFilteredFriends] = useState(mockFriends);
   const { conversationId } = useParams();
   const navigate = useNavigate();
   const currentUser = useSelector((state) => state.auth.userData);
-
-  const filteredConversations = mockConversations.filter((conv) => {
-    if (conv.type === "private") {
-      return conv.participants[0].fullName
-        .toLowerCase()
-        .includes(searchQuery.toLowerCase());
+  const { data: friends = [] } = useSWR("friends", () =>
+    friendService.getFriends(friendSearchQuery).then((res) => res.data.friends)
+  );
+  const { data: conversationsData = { data: [] } } = useSWR("conversations", () =>
+    conversationService.getConversations()
+  );
+  
+  const conversations = conversationsData.data || [];
+  
+  const filteredConversations = conversations.filter((conv) => {
+    if (conv.conversationType === "private") {
+      return conv.displayName.toLowerCase().includes(searchQuery.toLowerCase());
     } else {
-      return conv.metadata.name
-        .toLowerCase()
-        .includes(searchQuery.toLowerCase());
+      return conv.displayName.toLowerCase().includes(searchQuery.toLowerCase());
     }
   });
 
   useEffect(() => {
     setFilteredFriends(
-      mockFriends.filter((friend) =>
+      friends.filter((friend) =>
         friend.fullName.toLowerCase().includes(friendSearchQuery.toLowerCase())
       )
     );
-  }, [friendSearchQuery]);
+  }, [friendSearchQuery, friends]);
 
   const handleFriendClick = (friend) => {
     // Find if there's an existing conversation with this friend
-    const existingConversation = mockConversations.find(
+    const existingConversation = conversations.find(
       (conv) =>
-        conv.type === "private" && conv.participants[0]._id === friend._id
+        conv.conversationType === "private" && 
+        conv.participantInfo && 
+        conv.participantInfo._id === friend._id
     );
 
     if (existingConversation) {
@@ -233,9 +64,7 @@ function Sidebar({ isMobileSidebarOpen, setIsMobileSidebarOpen }) {
       // For demo: Navigate to first conversation and pretend it's with this friend
       // In a real app, you would create a new conversation and navigate to it
       navigate(
-        `/chat/1?new=true&friendId=${
-          friend._id
-        }&friendName=${encodeURIComponent(friend.fullName)}`
+        `/chat/new`
       );
     }
 
