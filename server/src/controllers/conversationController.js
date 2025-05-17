@@ -146,7 +146,7 @@ const getConversationById = asyncHandler(async (req, res) => {
     const { id } = req.params;
     const conversation = await Conversations.findById(id)
       .populate("participants", "fullName profilePicture")
-      .populate("latestMessage");
+    
 
     if (!conversation) {
       throw new ApiError(

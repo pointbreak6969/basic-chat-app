@@ -64,7 +64,7 @@ function Sidebar({ isMobileSidebarOpen, setIsMobileSidebarOpen }) {
       // For demo: Navigate to first conversation and pretend it's with this friend
       // In a real app, you would create a new conversation and navigate to it
       navigate(
-        `/chat/new`
+        `/chat/new?new=true&friendId=${friend._id}`
       );
     }
 

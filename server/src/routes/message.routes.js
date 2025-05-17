@@ -4,7 +4,7 @@ import {verifyJwt} from '../middlewares/auth.middleware.js';
 
 const router = Router();
 
-router.route("/:id").get(verifyJwt, getMessages);
+router.route("/:conversationId").get(verifyJwt, getMessages);
 router.route("/send/:id").post(verifyJwt, sendMessage);
 
 export default router;

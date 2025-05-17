@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-
+import mongoosePaginate from "mongoose-paginate-v2";
 const MessagesSchema = new mongoose.Schema({
     conversation: {
         type: mongoose.Schema.Types.ObjectId,
@@ -38,6 +38,6 @@ const MessagesSchema = new mongoose.Schema({
 }, {
     timestamps: true,
 })
-
+MessagesSchema.plugin(mongoosePaginate);
 const Messages = mongoose.model("Messages", MessagesSchema);    
 export default Messages;

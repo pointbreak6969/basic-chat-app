@@ -1,5 +1,5 @@
-import mongoose from "mongoose";
-
+import mongoose, { Mongoose } from "mongoose";
+import mongoosePaginate from "mongoose-paginate-v2";
 const ConversationsSchema = new mongoose.Schema({
     type: {
         type: String,
@@ -54,6 +54,6 @@ ConversationsSchema.pre("save", function(next) {
     }
     next();
 });
-
+ConversationsSchema.plugin(mongoosePaginate);
 const Conversations = mongoose.model("Conversations", ConversationsSchema);
 export default Conversations;

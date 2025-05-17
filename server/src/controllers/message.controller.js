@@ -1,26 +1,49 @@
 import User from "../models/Users.js";
 import Message from "../models/Messages.js";
-import Conversation from "../models/Conversation.js";
+import Conversations from "../models/Conversation.js";
 import { getReceiverSocketId, io } from "../utils/socket.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { uploadFile } from "../utils/aws.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
-
 export const getMessages = asyncHandler(async (req, res) => {
   try {
-    const { id } = req.params;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+    const { conversationId } = req.params;
     const myId = req.user._id;
+
+    // Count total messages for pagination metadata
+    const totalMessages = await Message.countDocuments({
+      $or: [
+        { sender: myId, receiver: id },
+        { sender: id, receiver: myId },
+      ],
+    });
+
+    // Fetch messages with pagination
     const messages = await Message.find({
       $or: [
         { sender: myId, receiver: id },
         { sender: id, receiver: myId },
       ],
-    }).sort({ createdAt: 1 });
-
+    })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+    
+    // Prepare pagination info
+    const pagination = {
+      total: totalMessages,
+      page,
+      limit,
+      pages: Math.ceil(totalMessages / limit)
+    };
+    
     return res
       .status(200)
-      .json(new ApiResponse(200, messages, "Messages fetched successfully"));
+      .json(new ApiResponse(200, { messages, pagination }, "Messages fetched successfully"));
   } catch (error) {
     throw new ApiError(
       500,
@@ -127,7 +150,6 @@ export const sendMessage = asyncHandler(async (req, res) => {
     // Populate sender info in the response
     const populatedMessage = await Message.findById(newMessage._id)
       .populate("sender", "fullName profilePicture")
-      .populate("replyTo");
 
     return res.status(201).json(
       new ApiResponse(
@@ -145,16 +167,3 @@ export const sendMessage = asyncHandler(async (req, res) => {
   }
 });
 
-// Helper function to get display text for message types
-const getDisplayTextForMessageType = (type, fileName) => {
-  switch (type) {
-    case "image":
-      return "📷 Image";
-    case "voice":
-      return "🎤 Voice message";
-    case "file":
-      return fileName ? `📄 ${fileName}` : "📄 File";
-    default:
-      return "";
-  }
-};
