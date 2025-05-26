@@ -40,7 +40,7 @@ function ConversationItem({ conversation, isActive, currentUser }) {
         return null
     }
   }
-
+  
   const getLastMessagePreview = () => {
     if (!conversation.lastMessage) {
       return "No messages yet";

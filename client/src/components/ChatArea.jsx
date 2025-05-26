@@ -1,262 +1,174 @@
-import { useState, useRef, useEffect } from "react"
-import { Phone, Video, Info, ArrowLeft, Paperclip, Mic, Send, ImageIcon, File } from "lucide-react"
-import MessageBubble from "./MessageBuble"
-import UserAvatar from "./UserAvatar"
-import { useParams, useOutletContext, useSearchParams, useNavigate } from "react-router-dom"
-import conversationService from "@/services/conversationService"
-import useSWR from "swr"
-
-// Mock data for conversations
-// const mockConversations = [
-//   {
-//     _id: "1",
-//     type: "private",
-//     participants: [{ _id: "2", fullName: "Jane Smith", profilePicture: "/placeholder.svg?height=40&width=40" }],
-//     lastMessage: {
-//       text: "Hey, how are you doing?",
-//       timeStamp: new Date(Date.now() - 1000 * 60 * 5),
-//       status: "seen",
-//     },
-//   },
-//   {
-//     _id: "2",
-//     type: "private",
-//     participants: [{ _id: "3", fullName: "John Doe", profilePicture: "/placeholder.svg?height=40&width=40" }],
-//     lastMessage: {
-//       text: "Can we meet tomorrow?",
-//       timeStamp: new Date(Date.now() - 1000 * 60 * 30),
-//       status: "delivered",
-//     },
-//   },
-//   {
-//     _id: "3",
-//     type: "group",
-//     participants: [
-//       { _id: "2", fullName: "Jane Smith", profilePicture: "/placeholder.svg?height=40&width=40" },
-//       { _id: "3", fullName: "John Doe", profilePicture: "/placeholder.svg?height=40&width=40" },
-//       { _id: "4", fullName: "Mike Johnson", profilePicture: "/placeholder.svg?height=40&width=40" },
-//     ],
-//     metadata: {
-//       name: "Project Team",
-//       description: "Team discussion",
-//       avatar: "/placeholder.svg?height=40&width=40",
-//     },
-//     lastMessage: {
-//       text: "Meeting at 3pm",
-//       timeStamp: new Date(Date.now() - 1000 * 60 * 60 * 2),
-//       status: "sent",
-//     },
-//   },
-//   {
-//     _id: "4",
-//     type: "private",
-//     participants: [{ _id: "5", fullName: "Sarah Williams", profilePicture: "/placeholder.svg?height=40&width=40" }],
-//     lastMessage: {
-//       text: "Thanks for your help!",
-//       timeStamp: new Date(Date.now() - 1000 * 60 * 60 * 24),
-//       status: "seen",
-//     },
-//   },
-//   {
-//     _id: "5",
-//     type: "group",
-//     participants: [
-//       { _id: "6", fullName: "Alex Brown", profilePicture: "/placeholder.svg?height=40&width=40" },
-//       { _id: "7", fullName: "Emily Davis", profilePicture: "/placeholder.svg?height=40&width=40" },
-//       { _id: "8", fullName: "Chris Wilson", profilePicture: "/placeholder.svg?height=40&width=40" },
-//     ],
-//     metadata: {
-//       name: "Friends Group",
-//       description: "Weekend plans",
-//       avatar: "/placeholder.svg?height=40&width=40",
-//     },
-//     lastMessage: {
-//       text: "Who's free this weekend?",
-//       timeStamp: new Date(Date.now() - 1000 * 60 * 60 * 48),
-//       status: "seen",
-//     },
-//   },
-// ]
-
-// Mock messages for the active conversation
-// const getMockMessages = (conversationId) => {
-//   const baseMessages = [
-//     {
-//       _id: "1",
-//       sender: { _id: "2", fullName: "Jane Smith", profilePicture: "/placeholder.svg?height=40&width=40" },
-//       type: "text",
-//       content: { type: "text", text: "Hey there! How are you doing today?" },
-//       status: "seen",
-//       timestamp: new Date(Date.now() - 1000 * 60 * 60),
-//     },
-//     {
-//       _id: "2",
-//       sender: { _id: "1", fullName: "You", profilePicture: "/placeholder.svg?height=40&width=40" },
-//       type: "text",
-//       content: { type: "text", text: "I'm good, thanks! Just working on this new project." },
-//       status: "seen",
-//       timestamp: new Date(Date.now() - 1000 * 60 * 55),
-//     },
-//     {
-//       _id: "3",
-//       sender: { _id: "2", fullName: "Jane Smith", profilePicture: "/placeholder.svg?height=40&width=40" },
-//       type: "text",
-//       content: { type: "text", text: "That sounds interesting! What kind of project is it?" },
-//       status: "seen",
-//       timestamp: new Date(Date.now() - 1000 * 60 * 50),
-//     },
-//     {
-//       _id: "4",
-//       sender: { _id: "1", fullName: "You", profilePicture: "/placeholder.svg?height=40&width=40" },
-//       type: "text",
-//       content: { type: "text", text: "It's a chat application, similar to Messenger. I'm building it with React." },
-//       status: "seen",
-//       timestamp: new Date(Date.now() - 1000 * 60 * 45),
-//     },
-//     {
-//       _id: "5",
-//       sender: { _id: "2", fullName: "Jane Smith", profilePicture: "/placeholder.svg?height=40&width=40" },
-//       type: "file",
-//       content: {
-//         type: "file",
-//         fileUrl: "/placeholder.svg?height=200&width=300",
-//         fileName: "design-mockup.png",
-//         fileSize: 2500000,
-//         fileType: "image/png",
-//       },
-//       status: "seen",
-//       timestamp: new Date(Date.now() - 1000 * 60 * 40),
-//     },
-//     {
-//       _id: "6",
-//       sender: { _id: "2", fullName: "Jane Smith", profilePicture: "/placeholder.svg?height=40&width=40" },
-//       type: "text",
-//       content: { type: "text", text: "Here's a mockup that might help with your design!" },
-//       status: "seen",
-//       timestamp: new Date(Date.now() - 1000 * 60 * 39),
-//     },
-//     {
-//       _id: "7",
-//       sender: { _id: "1", fullName: "You", profilePicture: "/placeholder.svg?height=40&width=40" },
-//       type: "text",
-//       content: { type: "text", text: "Thanks! This looks great. I'll use it as a reference." },
-//       status: "delivered",
-//       timestamp: new Date(Date.now() - 1000 * 60 * 30),
-//     },
-//     {
-//       _id: "8",
-//       sender: { _id: "1", fullName: "You", profilePicture: "/placeholder.svg?height=40&width=40" },
-//       type: "voice",
-//       content: {
-//         type: "voice",
-//         fileUrl: "#",
-//         duration: 15,
-//       },
-//       status: "delivered",
-//       timestamp: new Date(Date.now() - 1000 * 60 * 20),
-//     },
-//     {
-//       _id: "9",
-//       sender: { _id: "2", fullName: "Jane Smith", profilePicture: "/placeholder.svg?height=40&width=40" },
-//       type: "text",
-//       content: {
-//         type: "text",
-//         text: "I'll check your voice note later. By the way, do you need any help with the project?",
-//       },
-//       status: "delivered",
-//       timestamp: new Date(Date.now() - 1000 * 60 * 10),
-//     },
-//   ]
-
-//   // Add more messages for group chats
-//   if (conversationId === "3") {
-//     return [
-//       ...baseMessages,
-//       {
-//         _id: "10",
-//         sender: { _id: "3", fullName: "John Doe", profilePicture: "/placeholder.svg?height=40&width=40" },
-//         type: "text",
-//         content: { type: "text", text: "Hey everyone! When is our next meeting?" },
-//         status: "seen",
-//         timestamp: new Date(Date.now() - 1000 * 60 * 5),
-//       },
-//       {
-//         _id: "11",
-//         sender: { _id: "4", fullName: "Mike Johnson", profilePicture: "/placeholder.svg?height=40&width=40" },
-//         type: "text",
-//         content: { type: "text", text: "I think it's scheduled for tomorrow at 3pm." },
-//         status: "seen",
-//         timestamp: new Date(Date.now() - 1000 * 60 * 4),
-//       },
-//     ]
-//   }
-
-//   return baseMessages
-// }
+import { useState, useRef, useEffect } from "react";
+import {
+  Phone,
+  Video,
+  Info,
+  ArrowLeft,
+  Paperclip,
+  Mic,
+  Send,
+  ImageIcon,
+  File,
+  MessageCircle,
+} from "lucide-react";
+import MessageBubble from "./MessageBuble";
+import UserAvatar from "./UserAvatar";
+import {
+  useParams,
+  useOutletContext,
+  useSearchParams,
+  useNavigate,
+} from "react-router-dom";
+import conversationService from "@/services/conversationService";
+import useSWR, { mutate } from "swr";
+import messageService from "@/services/MessageService";
 
 function ChatArea() {
-  const { conversationId } = useParams()
-  const [searchParams] = useSearchParams()
-  const [setIsMobileSidebarOpen] = useOutletContext()
-  const navigate = useNavigate()
-  const [message, setMessage] = useState("")
-  const [messages, setMessages] = useState([])
-  const [showAttachmentOptions, setShowAttachmentOptions] = useState(false)
-  const [activeConversation, setActiveConversation] = useState(null)
-  const messagesEndRef = useRef(null)
-  const {data: Conversation, error } = useSWR("conversations", () => conversationService.getConversationById(conversationId).
-then(res => res.data))
+  const { conversationId } = useParams();
+  const [searchParams] = useSearchParams();
+  const [setIsMobileSidebarOpen] = useOutletContext();
+  const navigate = useNavigate();
+  const [message, setMessage] = useState("");
+  const [showAttachmentOptions, setShowAttachmentOptions] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const messagesEndRef = useRef(null);
+
+  // Fetch conversation data
+  const { data: conversation, error: conversationError } = useSWR(
+    conversationId ? `conversation-${conversationId}` : null,
+    () =>
+      conversationService
+        .getConversationById(conversationId)
+        .then((res) => res.data)
+  );
+
+  // Fetch messages data
+  const { data: messageData, error: messageError, mutate: mutateMessages } =
+    useSWR(
+      conversationId ? `messages-${conversationId}` : null,
+      () =>
+        messageService
+          .getMessages(conversationId, 1, 50)
+          .then((res) => res.data)
+    );
+
   // Check if this is a new conversation from friend selection
-  const isNewConversation = searchParams.get('new') === 'true'
-  const friendId = searchParams.get('friendId')
+  const isNewConversation = searchParams.get("new") === "true";
+  const friendId = searchParams.get("friendId");
 
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    scrollToBottom();
+  }, [messageData]);
 
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
 
+  const handleSendMessage = async (e) => {
+    e.preventDefault();
+    if (!message.trim() || !conversationId || isLoading) return;
 
+    setIsLoading(true);
+    try {
+      // Create the message data object
+      const messagePayload = {
+        text: message.trim(),
+      };
 
-  const handleSendMessage = (e) => {
-    e.preventDefault()
-    if (!message.trim() || !activeConversation) return
+      // Send message to backend
+      const response = await messageService.sendMessage(
+        conversationId,
+        messagePayload
+      );
 
-    const newMessage = {
-      _id: Date.now().toString(),
-      sender: { _id: "1", fullName: "You", profilePicture: "/placeholder.svg?height=40&width=40" },
-      type: "text",
-      content: { type: "text", text: message },
-      status: "sent",
-      timestamp: new Date(),
+      if (response.success) {
+        // Clear input
+        setMessage("");
+
+        // Optimistically update the messages list
+        if (messageData) {
+          const newMessagesList = [response.data, ...messageData.messages];
+          mutateMessages(
+            {
+              ...messageData,
+              messages: newMessagesList,
+            },
+            false
+          );
+        }
+
+        // Scroll to bottom
+        setTimeout(scrollToBottom, 100);
+
+        // Refresh messages from server
+        mutateMessages();
+
+        // Also refresh conversations to update last message
+        mutate("conversations");
+      }
+    } catch (error) {
+      console.error("Failed to send message:", error);
+      alert("Failed to send message. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
-
-    setMessages([...messages, newMessage])
-    setMessage("")
-  }
+  };
 
   const getConversationTitle = () => {
-    if (!activeConversation) return ""
+    if (!conversation) return "";
 
-    if (activeConversation.type === "private") {
-      return activeConversation.participants[0].fullName
+    if (conversation.conversationType === "private") {
+      return conversation.displayName || "Unknown User";
     } else {
-      return activeConversation.metadata.name
+      return conversation.displayName || "Group Chat";
     }
-  }
+  };
 
   const getConversationAvatar = () => {
-    if (!activeConversation) return ""
+    if (!conversation) return "";
+    return conversation.displayPicture || "/placeholder.svg?height=40&width=40";
+  };
 
-    if (activeConversation.type === "private") {
-      return activeConversation.participants[0].profilePicture
+  const getOnlineStatus = () => {
+    if (!conversation) return "";
+
+    if (conversation.conversationType === "private") {
+      return "Online"; // You can implement real online status later
     } else {
-      return activeConversation.metadata.avatar
+      return `${conversation.participants?.length || 0} members`;
     }
-  }
+  };
 
-  if (!activeConversation) {
+  // Loading state
+  if (conversationError) {
     return (
       <div className="flex-1 flex items-center justify-center bg-gray-50">
         <div className="text-center">
-          <h2 className="text-2xl font-semibold text-gray-700">Welcome to Chatty</h2>
-          <p className="text-gray-500 mt-2">Select a conversation to start chatting</p>
+          <h2 className="text-xl font-semibold text-red-600">Error</h2>
+          <p className="text-gray-500 mt-2">Failed to load conversation</p>
+          <button
+            className="mt-4 px-4 py-2 bg-purple-600 text-white rounded-lg"
+            onClick={() => navigate("/")}
+          >
+            Go Back
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!conversationId) {
+    return (
+      <div className="flex-1 flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <MessageCircle size={64} className="mx-auto text-gray-400 mb-4" />
+          <h2 className="text-2xl font-semibold text-gray-700">
+            Welcome to Chatty
+          </h2>
+          <p className="text-gray-500 mt-2">
+            Select a conversation to start chatting
+          </p>
           <button
             className="md:hidden mt-4 px-4 py-2 bg-purple-600 text-white rounded-lg"
             onClick={() => setIsMobileSidebarOpen(true)}
@@ -265,8 +177,22 @@ then(res => res.data))
           </button>
         </div>
       </div>
-    )
+    );
   }
+
+  if (!conversation) {
+    return (
+      <div className="flex-1 flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
+          <p className="text-gray-500 mt-2">Loading conversation...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const messages = messageData?.messages || [];
+  const hasMessages = messages.length > 0;
 
   return (
     <div className="flex-1 flex flex-col">
@@ -275,7 +201,7 @@ then(res => res.data))
         <div className="flex items-center">
           <button
             className="md:hidden mr-2 p-2 rounded-full hover:bg-gray-100"
-            onClick={() => navigate('/')}
+            onClick={() => navigate("/")}
           >
             <ArrowLeft size={20} className="text-gray-600" />
           </button>
@@ -285,11 +211,7 @@ then(res => res.data))
           />
           <div className="ml-3">
             <p className="font-medium">{getConversationTitle()}</p>
-            {activeConversation.type === "private" ? (
-              <p className="text-xs text-green-500">Online</p>
-            ) : (
-              <p className="text-xs text-gray-500">{activeConversation.participants.length} members</p>
-            )}
+            <p className="text-xs text-green-500">{getOnlineStatus()}</p>
           </div>
         </div>
         <div className="flex space-x-2">
@@ -307,12 +229,44 @@ then(res => res.data))
 
       {/* Messages area */}
       <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
-        {messages.map((msg, index) => {
-          const showAvatar =
-            msg.sender._id !== "1" && (index === 0 || messages[index - 1].sender._id !== msg.sender._id)
+        {!hasMessages ? (
+          // Empty conversation UI
+          <div className="flex-1 flex items-center justify-center h-full">
+            <div className="text-center py-8">
+              <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <MessageCircle size={32} className="text-purple-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                Start the conversation
+              </h3>
+              <p className="text-gray-500 mb-4">
+                Send a message to {getConversationTitle()} to begin chatting
+              </p>
+              <div className="text-sm text-gray-400">
+                Say hello, share a thought, or ask a question!
+              </div>
+            </div>
+          </div>
+        ) : (
+          // Messages list (reversed since we get them in desc order from backend)
+          messages
+            .slice()
+            .reverse()
+            .map((msg, index, reversedArray) => {
+              const showAvatar =
+                index === 0 ||
+                reversedArray[index - 1].sender._id !== msg.sender._id;
 
-          return <MessageBubble key={msg._id} message={msg} isOwn={msg.sender._id === "1"} showAvatar={showAvatar} />
-        })}
+              return (
+                <MessageBubble
+                  key={msg._id}
+                  message={msg}
+                  isOwn={false}
+                  showAvatar={showAvatar}
+                />
+              );
+            })
+        )}
         <div ref={messagesEndRef} />
       </div>
 
@@ -330,13 +284,22 @@ then(res => res.data))
 
             {showAttachmentOptions && (
               <div className="absolute bottom-full left-0 mb-2 bg-white rounded-lg shadow-lg border border-gray-200 p-2 flex space-x-2">
-                <button type="button" className="p-2 rounded-full hover:bg-gray-100 text-purple-600">
+                <button
+                  type="button"
+                  className="p-2 rounded-full hover:bg-gray-100 text-purple-600"
+                >
                   <ImageIcon size={20} />
                 </button>
-                <button type="button" className="p-2 rounded-full hover:bg-gray-100 text-purple-600">
+                <button
+                  type="button"
+                  className="p-2 rounded-full hover:bg-gray-100 text-purple-600"
+                >
                   <File size={20} />
                 </button>
-                <button type="button" className="p-2 rounded-full hover:bg-gray-100 text-purple-600">
+                <button
+                  type="button"
+                  className="p-2 rounded-full hover:bg-gray-100 text-purple-600"
+                >
                   <Mic size={20} />
                 </button>
               </div>
@@ -349,21 +312,33 @@ then(res => res.data))
             className="flex-1 p-2 mx-2 rounded-full bg-gray-100 focus:outline-none focus:ring-1 focus:ring-purple-500"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
+            disabled={isLoading}
           />
 
           {message.trim() ? (
-            <button type="submit" className="p-2 rounded-full bg-purple-600 text-white hover:bg-purple-700">
-              <Send size={20} />
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="p-2 rounded-full bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isLoading ? (
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+              ) : (
+                <Send size={20} />
+              )}
             </button>
           ) : (
-            <button type="button" className="p-2 rounded-full hover:bg-gray-100 text-gray-600">
+            <button
+              type="button"
+              className="p-2 rounded-full hover:bg-gray-100 text-gray-600"
+            >
               <Mic size={20} />
             </button>
           )}
         </form>
       </div>
     </div>
-  )
+  );
 }
 
-export default ChatArea
+export default ChatArea;
